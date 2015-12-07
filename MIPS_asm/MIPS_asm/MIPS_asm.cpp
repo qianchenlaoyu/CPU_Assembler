@@ -22,6 +22,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -67,7 +69,41 @@ struct{
 int main(int argc, char *argv[])
 {
 	string s1;
+	string file_path;
+	ifstream source_file_stream;
 
-	std::cin >> s1;
+	cout << "当前目录：" << argv[0] << endl;
 
+	if (argc == 1)
+	{
+		//没有传入文件路径，手动输入
+		cout << "输入文件路径：" << endl;
+		cin >> file_path;
+	}
+	else
+	{
+		file_path = argv[1];
+	}
+
+	//指出操作文件
+	cout << "文件：" << file_path << endl;
+
+	//判断文件路径合理性
+	source_file_stream.open(file_path, ifstream::in);
+
+	if (source_file_stream)
+	{
+		cout << "打开文件成功。" << endl;
+	}
+	else
+	{
+		cout << "没能成功打开文件。" << endl;
+		system("PAUSE");
+		return 0;
+	}
+
+
+
+
+	system("PAUSE");
 }
