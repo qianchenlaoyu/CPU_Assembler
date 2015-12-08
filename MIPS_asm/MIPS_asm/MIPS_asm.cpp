@@ -12,7 +12,7 @@
 
 
 /* 汇编过程 */
-/* 判断输入参数，如果为合理参数就进行指定文件汇编，没有要求手动输入参数，不合理参数输出提示 */
+/* 判断调用参数，如果为合理参数就进行指定文件汇编，没有要求手动输入参数，不合理参数输出提示 */
 /* 根据同目录下的指令脚本文件生成指令表，找不到指令脚本文件输出错误 */
 /* 初始化系统变量，包括PC指向0地址，建立符号链表，建立输出缓冲 */
 /* 循环单行进行汇编，直到文件结束或遇到错误，其间的空行和注释将被忽略掉 */
@@ -24,6 +24,7 @@
 #include <fstream>
 #include <filesystem>
 #include <stdlib.h>
+#include <vector>
 
 using namespace std;
 
@@ -31,39 +32,70 @@ using namespace std;
 
 
 /* 符号表 */
-/* 符号表采用静态方式 */
-/* 符号名最长39个字符 */
-/* 符号数最多100个 */
+/* 符号表采用动态向量方式存储 */
+/* 符号名最长不作限制 */
+/* 符号数不作限制，受限于int型变量能表达的最大正整数值 */
+typedef struct{
+	string name;
+	int value;
+}symbol_tab_str;
+
 struct{
 	int number;
-	struct{
-		char name[40];
-		unsigned int value;
-	}tab[100];
+	vector<symbol_tab_str> symbol_vector;
 }symbol_tab;
 
 
 
 /* 中间结果 */
-/* 静态方式存储 */
+/* 动态向量方式存储 */
 /* 内容包括二进制和符号 */
+/* 使用结构体位域,直接合成32位宽的2进制数 */
+typedef union{
+	struct{
+		volatile char32_t func : 6;
+		volatile char32_t sa : 5;
+		volatile char32_t rd : 5;
+		volatile char32_t rt : 5;
+		volatile char32_t rs : 5;
+		volatile char32_t op : 6;
+	};
+
+	struct{
+		volatile char32_t immediate : 16;
+		volatile char32_t : 16;
+	};
+
+	struct{
+		volatile char32_t target : 26;
+		volatile char32_t : 6;
+	};
+
+	volatile char32_t bin;
+}bin_str;
+
 struct{
 	int count;
-	struct{
-
-	};
+	vector<bin_str> bin_data;
 }middle_result;
 
 
-/* 汇编结果 */
-/* 静态方式存储 */
-/* 内容全为二进制数据 */
+/* 前向引有符号表 */
+/* 记录未知的符号引用，在下一轮插补时参考 */
+typedef struct{
+	string name;
+	enum class symbol_tyep{ IMMEDIATE, SKEWING, TARGET };
+}unknown_symbol_str;
 
+struct{
+	int count;
+	vector<unknown_symbol_str> unknown_symbol;
+}unknown_symbol_tab;
 
 /* 输出结果 */
 /* 输出到源文件同目录下 */
 /* 与源文件同名，后缀为.coe */
-
+/* 格式为ROM初始化文件格式 */
 
 
 int main(int argc, char *argv[])
@@ -101,7 +133,6 @@ int main(int argc, char *argv[])
 		system("PAUSE");
 		return 0;
 	}
-
 
 
 
