@@ -100,12 +100,28 @@ struct{
 /* 格式为ROM初始化文件格式 */
 
 
+/*
+	根据指令脚本文件编译指令集
+	每条指令由源匹配格式和输出处理格式组成
+	指令编译完成后所有信息保存在指令表中
+*/
+typedef struct{
+	regex r;
+	string source_format;
+	string output_format;
+}INS_STR;
+
+struct{
+	int count;
+	vector<INS_STR>  ins_tab;
+}ins;
 
 bool instruction_compile(void)
 {
 	string instruction_path;
 	ifstream instruction_file_stream;
 	char buf[1000];
+
 
 	GetCurrentDirectoryA(1000, buf);
 	instruction_path = buf;
@@ -114,7 +130,7 @@ bool instruction_compile(void)
 
 	cout << "指令脚本：" << instruction_path << endl;
 
-	instruction_file_stream.open(instruction_path, fstream::in);
+	instruction_file_stream.open(instruction_path);
 
 	if (instruction_file_stream)
 		cout << "指令脚本文件打开成功" << endl;
@@ -124,14 +140,51 @@ bool instruction_compile(void)
 		return false;
 	}
 		
-	regex r("");
-	string ins_str;
 
-	while (instruction_file_stream.getline(buf, 200))
+
+	while (instruction_file_stream.getline(buf, 300))
 	{
 		cout << buf << endl;
 	}
 
+	//instruction_file_stream.seekp(0);
+	instruction_file_stream.close();
+	instruction_file_stream.open(instruction_path);
+
+	regex r;
+	smatch result;
+	string ins_str;
+	INS_STR ins_temp;
+
+	ins.count = 0;
+	instruction_file_stream.seekg(0);
+
+	//ins_str = "#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}";
+	ins_str = "#\\w+\\{\\s*\\{\\.*([^\\}]*)\\};\\s*\\{\\.*([^\\}]*)\\}\\s*\\}";
+	try{
+		//r.assign(ins_str,regex::extended);
+		r = ins_str;
+	}
+	catch (regex_error e){
+		cout << e.what() << "\ncode:" << e.code() << endl;
+	}
+
+
+	while (instruction_file_stream.getline(buf, 300))
+	{
+		ins_str = buf;
+		if (regex_search(ins_str, result, r))
+		{
+			cout << result.str(1) << endl;
+			cout << result.str(2) << endl;
+
+			ins_temp.source_format = result.str(1);
+			ins_temp.output_format = result.str(2);
+
+			ins.ins_tab.push_back(ins_temp);
+			ins.count++;
+		}
+	}
 
 
 

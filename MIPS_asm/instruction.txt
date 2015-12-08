@@ -1,0 +1,3 @@
+#ADD{     {ADD RD,RS,RT};             {#000000    RS        RT        RD #00000 #100000}    }
+#ADDI{    {ADDI RT,RS,immediate};     {#001000    RS        RT        immediate}            }
+#B{       {B tab};                    {#000100    #00000    #00000    tab(16)}              }
