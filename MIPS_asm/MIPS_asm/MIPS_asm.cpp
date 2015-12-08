@@ -25,6 +25,8 @@
 #include <filesystem>
 #include <stdlib.h>
 #include <vector>
+#include <Windows.h>
+#include <regex>
 
 using namespace std;
 
@@ -98,6 +100,48 @@ struct{
 /* 格式为ROM初始化文件格式 */
 
 
+
+bool instruction_compile(void)
+{
+	string instruction_path;
+	ifstream instruction_file_stream;
+	char buf[1000];
+
+	GetCurrentDirectoryA(1000, buf);
+	instruction_path = buf;
+	cout << "当前目录：" << instruction_path << endl;
+	instruction_path += "\\instruction.txt";
+
+	cout << "指令脚本：" << instruction_path << endl;
+
+	instruction_file_stream.open(instruction_path, fstream::in);
+
+	if (instruction_file_stream)
+		cout << "指令脚本文件打开成功" << endl;
+	else
+	{
+		cout << "指令脚本文件打开失败" << endl;
+		return false;
+	}
+		
+	regex r("");
+	string ins_str;
+
+	while (instruction_file_stream.getline(buf, 200))
+	{
+		cout << buf << endl;
+	}
+
+
+
+
+	
+	
+
+	
+	return true;
+}
+
 int main(int argc, char *argv[])
 {
 	string s1;
@@ -134,7 +178,16 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-
+	//根据指令定义脚本生成指令处理方案
+	if (instruction_compile() == false)
+	{
+		cout << "指令脚本错误" << endl;
+		system("PAUSE");
+	}
+	else
+	{
+		cout << "读取指令脚本成功" << endl;
+	}
 
 	system("PAUSE");
 }
