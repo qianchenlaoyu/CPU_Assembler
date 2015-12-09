@@ -76,6 +76,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Text Include="..\ASM_Test.txt" />
     <Text Include="..\instruction.txt" />
     <Text Include="..\指令定义方法.txt" />
     <Text Include="ReadMe.txt" />

@@ -22,6 +22,9 @@
     <Text Include="..\指令定义方法.txt">
       <Filter>资源文件</Filter>
     </Text>
+    <Text Include="..\ASM_Test.txt">
+      <Filter>资源文件</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
