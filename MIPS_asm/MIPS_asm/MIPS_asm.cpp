@@ -237,35 +237,35 @@ int main(int argc, char *argv[])
 	string file_path;
 	ifstream source_file_stream;
 
-	cout << "当前目录：" << argv[0] << endl;
+	//cout << "当前目录：" << argv[0] << endl;
 
-	if (argc == 1)
-	{
-		//没有传入文件路径，手动输入
-		cout << "输入文件路径：" << endl;
-		cin >> file_path;
-	}
-	else
-	{
-		file_path = argv[1];
-	}
+	//if (argc == 1)
+	//{
+	//	//没有传入文件路径，手动输入
+	//	cout << "输入文件路径：" << endl;
+	//	cin >> file_path;
+	//}
+	//else
+	//{
+	//	file_path = argv[1];
+	//}
 
-	//指出操作文件
-	cout << "文件：" << file_path << endl;
+	////指出操作文件
+	//cout << "文件：" << file_path << endl;
 
-	//判断文件路径合理性
-	source_file_stream.open(file_path, ifstream::in);
+	////判断文件路径合理性
+	//source_file_stream.open(file_path, ifstream::in);
 
-	if (source_file_stream)
-	{
-		cout << "打开文件成功。" << endl;
-	}
-	else
-	{
-		cout << "没能成功打开文件。" << endl;
-		system("PAUSE");
-		return 0;
-	}
+	//if (source_file_stream)
+	//{
+	//	cout << "打开文件成功。" << endl;
+	//}
+	//else
+	//{
+	//	cout << "没能成功打开文件。" << endl;
+	//	system("PAUSE");
+	//	return 0;
+	//}
 
 	//根据指令定义脚本生成指令处理方案
 	if (instruction_compile() == false)

@@ -1,3 +1,61 @@
-#ADD{     {ADD RD,RS,RT};             {#000000    RS        RT        RD #00000 #100000}    }
-#ADDI{    {ADDI RT,RS,immediate};     {#001000    RS        RT        immediate}            }
-#B{       {B tab};                    {#000100    #00000    #00000    tab(16)}              }
+#ADD{     {ADD RD,RS,RT};             {#000000    RS        RT        RD           #00000    #100000}    }
+#ADDI{    {ADDI RT,RS,immediate};     {#001000    RS        RT        immediate}                         }
+#ADDIU{   {ADDIU RT,RS,immediate};    {#001001    RS        RT        immediate}                         }
+#ADDU{    {ADDU RD,RS,RT};            {#000000    RS        RT        RD           #00000    #100001}    }
+//#CLO{     {CLO RD,RS
+//#CLZ{     {CLZ RD,RS
+#DIV{     {DIV RS,RT};                {#000000    RS        RT        #00000       #00000    #011010}    }
+#DIVU{    {DIVU RS,RT};               {#000000    RS        RT        #00000       #00000    #011011}    }
+#MADD{    {MADD RS,TR};               {#011100    RS        RT        #00000       #00000    #000000}    }
+#MADDU{   {MADDU RS,RT};              {#011100    RS        RT        #00000       #00000    #000001}    }
+#MSUB{    {MSUB RS,RT};               {#011100    RS        RT        #00000       #00000    #000100}    }
+#MSUBU{   {MSUBU RS,RT};              {#011100    RS        RT        #00000       #00000    #000101}    }
+//#MUL{     {MUL RD,RS,RT};             {#011100    RS        RT        #
+#MULT{    {MULT RS,RT};               {#000000    RS        RT        #00000       #00000    #011000}    }
+#MULTU{   {MULTU RS,RT};              {#000000    RS        RT        #00000       #00000    #011001}    }
+#SLT{     {SLT RD,RS,RT};             {#000000    RS        RT        RD           #00000    #101010}    }
+#SLTI{    {SLTI RT,RS,immediate};     {#001010    RS        RT        immediate}                         }
+#SLTIU{   {SLTIU RT,RS,immediate};    {#001011    RS        RT        immediate}                         }
+#SLTU{    {SLTU RD,RS,RT};            {#000000    RS        RT        RD           #00000    #101011}    }
+#SUB{     {SUB RD,RS,RT};             {#000000    RS        RT        RD           #00000    #100010}    }
+#SUBU{    {SUBU RD,RS,RT};            {#000000    RS        RT        RD           #00000    #100011}    }
+#AND{     {AND RD,RS,RT};             {#000000    RS        RT        RD           #00000    #100100}    }
+#ANDI{    {ANDI RT,RS,immediate};     {#001100    RS        RT        immediate}                         }
+#LUI{     {LUI RT,immediate};         {#001111    #00000    RT        immediate}                         }
+#NOR{     {NOR RD,RS,RT};             {#000000    RS        RT        RD           #00000    #100111}    }
+#OR{      {OR RD,RS,RT};              {#000000    RS        RT        RD           #00000    #100101}    }
+#ORI{     {ORI RD,RS,immediate};      {#001101    RS        RT        immediate}                         }
+#XOR{     {XOR RD,RS,RT};             {#001110    RS        RT        RD           #00000    #100110}    }
+#XORI{    {XORI RT,RS,immediate};     {#001110    RS        RT        immediate}                         }
+#SLL{     {SLL RD,RT,SA};             {#000000    #00000    RT        RD           SA        #000000}    }
+#SLLV{    {SLLV RD,RT,RS};            {#000000    RS        RT        RD           #00000    #000100}    }
+#SRA{     {SRA RD,RT,SA};             {#000000    #00000    RT        RD           SA        #000011}    }
+#SRAV{    {SRAV RD,RT,RS};            {#000000    RS        RT        RD           #00000    #000111}    }
+#SRL{     {SRL RD,RT,SA};             {#000000    #00000    RT        RD           SA        #000010}    }
+#SRLV{    {SRLV RD,RT,RS};            {#000000    RS        RT        RD           #00000    #000110}    }
+#B{       {B offset};                 {#000100    #00000    #00000    offset}                            }
+#BAL{     {BAL RS,offset};            {#000001    #00000    #10001    offset}                            }
+#BEQ{     {BEQ RS,RT,offset};         {#000100    RS        RT        offset}                            }
+#BGEZ{    {BGEZ RS,offset};           {#000001    RS        #00001    offset}                            }
+#BGEZAL{  {BGEZAL RS,offset};         {#000001    RS        #10001    offset}                            }
+#BGTZ{    {BGTZ RS,offset};           {#000111    RS        #00000    offset}                            }
+#BLEZ{    {BLEZ RS,offset};           {#000110    RS        #00000    offset}                            }
+#BLTZ{    {BLTZ RS,offset};           {#000001    RS        #00000    offset}                            }
+#BLTZAL{  {BLTZAL RS,offset};         {#000001    RS        #10000    offset}                            }
+#BNE{     {BNE RS,RT,offset};         {#000101    RS        RT        offset}                            }
+#J{       {J target};                 {#000010    instr_index}                                           }
+#JAL{     {JAL target};               {#000011    instr_index}                                           }
+#JALR{    {JALR RS,RS};               {#000000    RS        #00000    RD           hint      #001001}    }
+#JR{      {JR RS};                    {#000000    RS        #00000    #00000       hint      #001000}    }
+#NOP{     {NOP};                      {#000000    #00000    #00000    #00000       #00000    #000000}    }
+#SSNOP{   {SSNOP};                    {#000000    #00000    #00000    #00000       #00001    #000000}    }
+#LW{      {LW RT,offset(base)};       {#100011    base      RT        offset}                            }
+#SW{      {SW RT,offset(base)};       {#101011    base      RT        offset}                            }
+#MFHI{    {MFHI RD};                  {#000000    #00000    #00000    RD           #00000    #010000}    }
+#MFLO{    {MFLO RD};                  {#000000    #00000    #00000    RD           #00000    #010010}    }
+#MOVN{    {MOVN RD,RS,RT};            {#000000    RS        RT        RD           #00000    #001011}    }
+#MOVZ{    {MOVZ RD,RS,RT};            {#000000    RS        RT        RD           #00000    #001010}    }
+#MTHI{    {MTHI RS};                  {#000000    RS        #00000    #00000       #00000    #010001}    }
+#MTLO{    {MTLO RS};                  {#000000    RS        #00000    #00000       #00000    #010011}    }
+
+
