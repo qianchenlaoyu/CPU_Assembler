@@ -154,42 +154,78 @@ bool instruction_compile(void)
 	regex r;
 	smatch result;
 	string ins_str;
+	string str_temp;
+
 	INS_STR ins_temp;
 
 	ins.count = 0;
 	instruction_file_stream.seekg(0);
 
-	//ins_str = "#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}";
-	ins_str = "#\\w+\\{\\s*\\{\\.*([^\\}]*)\\};\\s*\\{\\.*([^\\}]*)\\}\\s*\\}";
-	try{
-		//r.assign(ins_str,regex::extended);
-		r = ins_str;
-	}
-	catch (regex_error e){
-		cout << e.what() << "\ncode:" << e.code() << endl;
-	}
-
 
 	while (instruction_file_stream.getline(buf, 300))
 	{
+		ins_str = "#\\w+\\{\\s*\\{\\.*([^\\}]*)\\};\\s*\\{\\.*([^\\}]*)\\}\\s*\\}";
+		try{
+			r = ins_str;
+		}
+		catch (regex_error e){
+			cout << e.what() << "\ncode:" << e.code() << endl;
+		}
+
 		ins_str = buf;
-		if (regex_search(ins_str, result, r))
+		if (regex_match(ins_str, result, r))
 		{
 			cout << result.str(1) << endl;
 			cout << result.str(2) << endl;
 
 			ins_temp.source_format = result.str(1);
 			ins_temp.output_format = result.str(2);
+		
+			
+			try{
+				r = "\\b([a-zA-Z]+)(\\s+([a-zA-Z]+)(?:,(\\w+))?(?:,(\\w+))?)";
+			}
+			catch (regex_error e){
+				cout << e.what() << "\ncode:" << e.code() << endl;
+			}
+
+			ins_str = result.str(1);
+			if (regex_match(ins_str, result, r))
+			{
+				str_temp = "\\b";
+				str_temp += result[1].str();
+
+
+				if (result[2].matched)
+				{
+					str_temp += "\\s+";
+					str_temp += "\\w+";
+
+
+					for (int i = 4; i < 6; i++)
+					{
+						if (result[i].matched)
+						{
+							str_temp += "\\s*,\\s*";
+							str_temp += "\\w+";
+						}
+					}
+				}
+
+				try{
+					ins_temp.r = str_temp;
+				}
+				catch (regex_error e){
+					cout << e.what() << "\ncode:" << e.code() << endl;
+				}
+				
+			}
 
 			ins.ins_tab.push_back(ins_temp);
 			ins.count++;
 		}
 	}
 
-
-
-	
-	
 
 	
 	return true;
