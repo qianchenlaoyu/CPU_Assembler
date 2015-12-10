@@ -511,7 +511,7 @@ bool assembly_execute(void)
 							if (s2[0] == '#')
 							{
 								//直接数，将二进制串转化为int型，并存入中间结果
-								bin_temp.bin = binary_to_uint(result_output[i].str(), bits) << bit_count;
+								bin_temp.bin |= binary_to_uint(result_output[i].str(), bits) << bit_count;
 								bit_count += bits;
 							}
 							else
