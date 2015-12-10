@@ -302,6 +302,9 @@ bool output_to_file(void)
 			}
 
 			temp <<= 1;
+
+			if (j == 5)
+				str_temp += "    ";
 		}
 
 		i++;
@@ -392,6 +395,7 @@ bool assembly_execute(void)
 	smatch result_output;
 	int bit_count;
 	int bits;
+	char32_t value_temp;
 
 	auto ins_index = ins.ins_tab.begin();
 
@@ -511,8 +515,10 @@ bool assembly_execute(void)
 							if (s2[0] == '#')
 							{
 								//直接数，将二进制串转化为int型，并存入中间结果
-								bin_temp.bin |= binary_to_uint(result_output[i].str(), bits) << bit_count;
+								value_temp = binary_to_uint(result_output[i].str(), bits);
 								bit_count += bits;
+
+								bin_temp.bin |= value_temp << (32 -bit_count);
 							}
 							else
 							{
