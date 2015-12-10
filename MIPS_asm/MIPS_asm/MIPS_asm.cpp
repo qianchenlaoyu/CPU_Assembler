@@ -254,6 +254,77 @@ bool instruction_compile(void)
 
 
 /*
+	输出到文件
+*/
+bool output_to_file(void)
+{
+	ofstream output_file_stream;
+	string output_file_path;
+	string str_temp;
+	char32_t temp;
+	int j;
+
+	output_file_path = work_path + "\\output.txt";
+	
+	output_file_stream.open(output_file_path);
+
+	if (output_file_stream)
+	{
+
+
+	}
+	else
+	{
+		cout << "创建文件失败" << endl;
+		return false;
+	}
+
+	//输出文件头
+	output_file_stream << "memory_initialization_radix=2;" << endl;
+	output_file_stream << "memory_initialization_vector=" << endl;
+
+
+	//循环输出二进制数
+	for (auto i = middle_result.bin_data.begin(); i != middle_result.bin_data.end(); )
+	{
+		temp = i->bin;
+		str_temp = "";
+
+		for (j = 0; j < 32; j++)
+		{
+			if (temp & 0x80000000)
+			{
+				str_temp += "1";
+			}
+			else
+			{
+				str_temp += "0";
+			}
+
+			temp <<= 1;
+		}
+
+		i++;
+		if (i != middle_result.bin_data.end())
+			output_file_stream << str_temp << "," << endl;
+		else
+			output_file_stream << str_temp << ";" << endl;
+	}
+
+
+	//关闭文件
+	output_file_stream.close();
+
+	return true;
+}
+
+
+
+
+
+
+
+/*
 	执行汇编
 	返回逻辑值
 	汇编信息保存在全局变量中
@@ -526,7 +597,14 @@ bool assembly_execute(void)
 
 
 	//得到完全的二进制数，输出到文件
-
+	if (output_to_file())
+	{
+		cout << "输出文件成功" << endl;
+	}
+	else
+	{
+		cout << "输出文件失败" << endl;
+	}
 
 
 
