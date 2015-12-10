@@ -28,6 +28,7 @@
 #include <Windows.h>
 #include <regex>
 #include <sstream>
+#include "expression.h"
 
 using namespace std;
 
@@ -82,6 +83,18 @@ union bin_str{
 		volatile char32_t : 6;
 	};
 
+	struct{
+		volatile char32_t instr_index : 26;
+		volatile char32_t : 6;
+	};
+
+	struct{
+		volatile char32_t offset : 16;
+		volatile char32_t : 5;
+		volatile char32_t base : 5;
+		volatile char32_t : 6;
+	};
+
 	volatile char32_t bin;
 };
 
@@ -125,6 +138,8 @@ struct ins_str{
 	vector<INS_STR>  ins_tab;
 }ins;
 
+vector<string> ins_error_information;
+
 bool instruction_compile(void)
 {
 	string instruction_path;
@@ -149,7 +164,8 @@ bool instruction_compile(void)
 	instruction_file_stream.close();
 	instruction_file_stream.open(instruction_path);
 
-	regex r;
+	regex r_instruction_format;
+	regex r_source_input;
 	smatch result;
 	string ins_str;
 	string str_temp;
@@ -160,51 +176,56 @@ bool instruction_compile(void)
 	instruction_file_stream.seekg(0);
 
 
+	try{
+		r_instruction_format = "^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$";
+	}
+	catch (regex_error e){
+		cout << e.what() << "\ncode:" << e.code() << endl;
+	}
+
+	try{
+		r_source_input = "^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$";
+	}
+	catch (regex_error e){
+		cout << e.what() << "\ncode:" << e.code() << endl;
+	}
+
 	while (instruction_file_stream.getline(buf, 300))
 	{
-		ins_str = "#\\w+\\{\\s*\\{\\.*([^\\}]*)\\};\\s*\\{\\.*([^\\}]*)\\}\\s*\\}";
-		try{
-			r = ins_str;
-		}
-		catch (regex_error e){
-			cout << e.what() << "\ncode:" << e.code() << endl;
-		}
-
+		//对整条指令格式串进行匹配
 		ins_str = buf;
-		if (regex_match(ins_str, result, r))
+		if (regex_match(ins_str, result, r_instruction_format))
 		{
 			ins_temp.source_format = result.str(1);
 			ins_temp.output_format = result.str(2);
 
-			try{
-				r = "\\b([a-zA-Z]+)(\\s+([a-zA-Z]+)(?:,(\\w+))?(?:,(\\w+))?)";
-			}
-			catch (regex_error e){
-				cout << e.what() << "\ncode:" << e.code() << endl;
-			}
-
+			//进一步对源输入格式串进行匹配
 			ins_str = result.str(1);
-			if (regex_match(ins_str, result, r))
+			if (regex_match(ins_str, result, r_source_input))
 			{
-				str_temp = "(^\\s*\\b";
-				str_temp += result[1].str();
+				str_temp = "(?:^\\s+\\b";
+				str_temp += "(" + result[1].str() + ")";	//第一组，指令码
 
 				if (result[2].matched)
 				{
+					str_temp += "(?:";						//区分带参情况
 					str_temp += "\\s+";
-					str_temp += "\\w+";
+					str_temp += "(\\w+)";					//第二组
 
-					for (int i = 4; i < 6; i++)
+					if (result[3].matched)
 					{
-						if (result[i].matched)
-						{
-							str_temp += "\\s*,\\s*";
-							str_temp += "\\w+";
-						}
+						str_temp += "(?:\\s*,\\s*(\\w+))?";			//第三组
 					}
+
+					if (result[4].matched)
+					{
+						str_temp += "(?:\\s*,\\s*(\\w+))?";			//第四组
+					}
+
+					str_temp += ")?";
 				}
 
-				str_temp += "\\s*($|//))|(^\\s*($|//))";
+				str_temp += "\\s*(?:$|//))|(?:^\\s*(?:$|//))";			//处理注释和空行
 
 				try{
 					ins_temp.r = str_temp;
@@ -212,10 +233,18 @@ bool instruction_compile(void)
 				catch (regex_error e){
 					cout << e.what() << "\ncode:" << e.code() << endl;
 				}
-			}
 
-			ins.ins_tab.push_back(ins_temp);
-			ins.count++;
+				ins.ins_tab.push_back(ins_temp);
+				ins.count++;
+			}
+			else{
+				//记录未识别指令
+				ins_error_information.push_back(buf);
+			}
+		}
+		else{
+			//记录未识别指令
+			ins_error_information.push_back(buf);
 		}
 	}
 
@@ -242,15 +271,56 @@ struct assembly_information_str{
 
 string source_file_path;
 
+struct source_input_str{
+	unsigned int op;
+	unsigned int rs;
+	unsigned int rd;
+	unsigned int rt;
+	unsigned int sa;
+	unsigned int immediate;
+	unsigned int target;
+	unsigned int offset;
+	unsigned int tab;
+}source_input;
+
+struct bin_output_str{
+	unsigned int op;
+	unsigned int rs;
+	unsigned int rd;
+	unsigned int rt;
+	unsigned int sa;
+	unsigned int immediate;
+	unsigned int target;
+	unsigned int offset;
+	unsigned int instr_index;
+	unsigned int base;
+	unsigned int hint;
+	unsigned int func;
+	unsigned int tab;
+}bin_output;
+
+
+
+
+
 bool assembly_execute(void)
 {
-	int i;
+	int i,j;
 	int line;
-	string s1,s2;
+	string s1,s2,s3;
+	string str_reg;
 	smatch result;
 	ifstream source_file_stream;
 	stringstream s_stream;
 	bin_str bin_temp;
+	regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$",regex::icase);
+	regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
+	regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
+	smatch result_reg;
+	smatch result_source;
+	smatch result_output;
+	int bit_count;
+	int bits;
 
 	auto ins_index = ins.ins_tab.begin();
 
@@ -274,35 +344,154 @@ bool assembly_execute(void)
 	error_information.number = 0;
 	line = 1;
 
+
+	//取一行文本
 	while (source_file_stream.getline(buf,500))
 	{
 		s1 = buf;
-		cout << s1 << endl;
-
 		for (ins_index = ins.ins_tab.begin(); ins_index != ins.ins_tab.end(); ins_index++)
 		{
 			if (regex_search(s1, result, ins_index->r))
 			{
+				//匹配到一条语句，进行处理
+
+				//分别对源输入格式串和汇编语句进行匹配，提取出输入值
+				//求得每一个位域的值
+				//已知引用，直接产生机器码
+				//未知引用，可能是前向引用，记入未知符号表
+
+				
 				if (result[1].matched)
 				{
-					//匹配到一条语句，进行处理
+					regex_match(ins_index->source_format, result_source, r_source);
 					
-					//已知引用，直接产生机器码
-					bin_temp.bin = 2034;
+					//对输入的每个符号进行分析，转化为数值
+					for (i = 2; i < 5; i++)
+					{
+						if (result[i].matched)
+						{
+							//判断是否为寄存器
+							s2 = result[i].str();
+							if (regex_match(s2, result_reg, reg_format))
+							{
+								s3 = result_reg[1].str();
+
+								//是寄存器，进一步判断合理性
+								s2 = result_source[i].str();
+								if ((s2 == "RS") || (s2 == "RT") || (s2 == "RD"))
+								{
+									//合理寄存器编号使用，转化为寄存器编号
+									s_stream.clear();
+									s_stream << s3;
+									s_stream >> j;
+
+									if (s2 == "RS")
+										bin_output.rs = j;
+									else if (s2 == "RT")
+										bin_output.rt = j;
+									else if (s2 == "RD")
+										bin_output.rd = j;
+
+								}
+								else
+								{
+									//产生错误
+									s_stream.clear();
+									s_stream << line;
+									s_stream >> s2;
+
+									s2 = "error: line " + s2 ;
+									s2 += "    用法错误   " + s1;
+									error_information.error.push_back(s2);
+									error_information.number++;
+
+									//累计错误达到上限停止汇编
+									if (error_information.number == MAX_ERROR_NUMBER)
+										return false;
+								}
+
+							}
+							else
+							{
+								//不是寄存器
+								s3 = "";
+							}
+
+						}
+						else
+						{
+							//没有可用的匹配项，退出循环
+							break;
+						}
+					}
+
+
+					//依据输出格式，按位填充
+					regex_match(ins_index->output_format, result_output, r_output);
+					bit_count = 0;
+					bin_temp.bin = 0;
+
+					for (i = 1; i < 7; i++)
+					{
+						if (result_output[i].matched)
+						{
+							s2 = result_output[i].str();
+							//区分开直接数和参数
+							if (s2[0] == '#')
+							{
+								//直接数，将二进制串转化为int型，并存入中间结果
+								bin_temp.bin = binary_to_uint(result_output[i].str(), bits) << bit_count;
+								bit_count += bits;
+							}
+							else
+							{
+								//判断是否是寄存器参数
+								if ((s2 == "RS") || (s2 == "RT") || (s2 == "RD"))
+								{
+									if (s2 == "RS"){
+										bin_temp.rs = bin_output.rs;
+									}
+									else if (s2 == "RT"){
+										bin_temp.rt = bin_output.rt;
+									}
+									else if (s2 == "RD"){
+										bin_temp.rd = bin_output.rd;
+									}
+									
+									bit_count += 5;
+								}
+								else
+								{
+									//参数，查找符号表
+
+
+
+
+								}
+							}
+						}
+						else
+						{
+							//没有可用的匹配项，退出循环
+							break;
+						}
+					}
+					
+					//存入结果
 					middle_result.bin_data.push_back(bin_temp);
-
-
-					//未知引用，可能是前向引用，记入未知符号表
-
-
-
-
-
-
+					middle_result.count++;
 					assembly_information.size++;
 				}
+				else			
+				{
+					//空行
+				}
+
+				//区配到一条语句，并完成处理，进入下一循环
 				break;
 			}
+			
+
 		}
 
 		//错误处理
@@ -321,8 +510,11 @@ bool assembly_execute(void)
 				return false;
 		}
 		
+		//行号计数
 		line++;
 	}
+
+
 
 	//进行第二次扫描，替换前向引用符号
 	for (auto i = unknown_symbol_tab.unknown_symbol.begin(); i != unknown_symbol_tab.unknown_symbol.end(); i++)
@@ -387,6 +579,13 @@ int main(int argc, char *argv[])
 	else
 	{
 		cout << "读取指令脚本成功，" << "共扫描到" << ins.count << "条指令" << endl;
+		cout << "未识别指令：" << endl;
+		for (auto i = ins_error_information.begin(); i != ins_error_information.end(); i++)
+		{
+			cout << *i << endl;
+		}
+
+
 	}
 
 	//启动汇编
