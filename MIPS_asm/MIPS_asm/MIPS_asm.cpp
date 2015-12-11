@@ -106,9 +106,11 @@ struct middle_result_str{
 
 /* 前向引有符号表 */
 /* 记录未知的符号引用，在下一轮插补时参考 */
+enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT };
+
 struct unknown_symbol_str{
 	string name;
-	enum class symbol_tyep{ IMMEDIATE, SKEWING, TARGET };
+	symbol_type symbol_x;
 };
 
 struct unknown_symbol_tab_str{
@@ -225,7 +227,7 @@ bool instruction_compile(void)
 					str_temp += ")?";
 				}
 
-				str_temp += "\\s*(?:$|//))|(?:^\\s*(?:$|//))";			//处理注释和空行
+				str_temp += "\\s*(?:$|//))|(?:^\\s*(?:$|//))";		//处理注释和空行
 
 				try{
 					ins_temp.r = str_temp;
@@ -305,6 +307,12 @@ bool output_to_file(void)
 
 			if (j == 5)
 				str_temp += "    ";
+			if (j == 10)
+				str_temp += "    ";
+			if (j == 15)
+				str_temp += "    ";
+			if (j == 20)
+				str_temp += "    ";
 		}
 
 		i++;
@@ -322,6 +330,36 @@ bool output_to_file(void)
 }
 
 
+
+
+/*
+	表达式求值
+	返回逻辑值
+*/
+bool evaluation(string &exp, char32_t &value)
+{
+	//首先对表达式中的符号进行解引用
+	//然后以常量表达式的形式进行计算
+	//不能解引用，返回失败
+	//表达式计算错误，返回失败
+
+
+	string postexp;
+	double value_temp;
+
+	if (!trans(exp, postexp))
+	{
+		return false;
+	}
+
+	if (!compvalue(postexp, value_temp))
+	{
+		return false;
+	}
+
+	value = (char32_t)value_temp;
+	return true;
+}
 
 
 
@@ -489,7 +527,48 @@ bool assembly_execute(void)
 							else
 							{
 								//不是寄存器
-								s3 = "";
+								//这里应该得到一个常量值
+								//如果无法解算出值来，此次假定为是前向引用
+								//无法解算的表达式将被存入未知引用表里
+
+								if (evaluation(s2, value_temp))
+								{
+									//可直接解算
+									
+
+									if (result_source.str(i) == "immediate")
+									{
+										bin_output.immediate = value_temp;
+									}
+									else if (result_source.str(i) == "SA")
+									{
+
+									}
+									else if (result_source.str(i) == "offset")
+									{
+
+									}
+									else if (result_source.str(i) == "instr_index")
+									{
+
+									}
+									else if (result_source.str(i) == "base")
+									{
+
+									}
+									else if (result_source.str(i) == "hint")
+									{
+
+									}
+
+
+								}
+								else
+								{
+									//不能解算，记入前向引用
+
+								}
+
 							}
 
 						}
@@ -539,10 +618,31 @@ bool assembly_execute(void)
 								}
 								else
 								{
-									//参数，查找符号表
+									if (s2 == "immediate")
+									{
+										bin_temp.immediate = bin_output.immediate;
+										bit_count += 16;
+									}
+									else if (s2 == "SA")
+									{
 
+									}
+									else if (s2 == "offset")
+									{
 
+									}
+									else if (s2 == "instr_index")
+									{
 
+									}
+									else if (s2 == "base")
+									{
+
+									}
+									else if (s2 == "hint")
+									{
+
+									}
 
 								}
 							}
