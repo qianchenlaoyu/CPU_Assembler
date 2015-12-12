@@ -44,7 +44,7 @@ string work_path;
 char buf[1000];
 
 
-enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT };
+enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL};
 
 /* 符号表 */
 /* 符号表采用动态向量方式存储 */
@@ -53,6 +53,7 @@ enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, 
 struct symbol_str{
 	string name;
 	int value;
+	string symbol_string;
 	symbol_type symbol_x;
 };
 
@@ -206,7 +207,7 @@ bool instruction_compile(void)
 					str_temp += ")?";
 				}
 
-				str_temp += "\\s*(?:$|//))|(?:^\\s*(?:$|//))";		//处理注释和空行
+				str_temp += "$)";
 
 				try{
 					ins_temp.r = str_temp;
@@ -348,11 +349,7 @@ bool evaluation(string &exp, char32_t &value)
 	返回逻辑值
 	汇编信息保存在全局变量中
 */
-struct error_information_str{
-	int number;
-	vector<string> error;
-}error_information;
-
+vector<string> error_information;
 string source_file_path;
 
 struct source_input_str{
@@ -401,7 +398,13 @@ bool assembly_execute(void)
 	regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$",regex::icase);
 	regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
 	regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
-	regex r_comment("^(.*?)(\\s*//.*)$");
+	regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");
+	regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");
+	regex r_label("^([a-zA-Z]\\w*):$");
+	regex r_null_line("^\\s*$");
+	smatch result_null_line;
+	smatch result_label;
+	smatch result_define;
 	smatch result_reg;
 	smatch result_source;
 	smatch result_output;
@@ -410,6 +413,7 @@ bool assembly_execute(void)
 	char32_t value_temp;
 	unknown_symbol_str unknown_symbol_temp;
 	symbol_type symbol_x_temp;
+	symbol_str	symbol_temp;
 
 	auto ins_index = ins.begin();
 
@@ -429,7 +433,6 @@ bool assembly_execute(void)
 	}
 
 	//初始化变量
-	error_information.number = 0;
 	line = 1;
 
 
@@ -441,221 +444,244 @@ bool assembly_execute(void)
 		//去除单行注释
 		source_one_line = regex_replace(s1, r_comment, "$1");
 
-		for (ins_index = ins.begin(); ins_index != ins.end(); ins_index++)
+		if (regex_match(source_one_line, result_null_line, r_null_line))
 		{
-			if (regex_search(source_one_line, result, ins_index->r))
+			//空行
+
+
+
+		}
+		else if (regex_match(source_one_line, result_define, r_define))
+		{
+			//判断是宏定义
+			symbol_temp.name = result_define.str(1);
+			symbol_temp.symbol_string = result_define.str(2);
+			symbol_temp.symbol_x = symbol_type::DEFINE;
+			symbol_tab.push_back(symbol_temp);
+		}
+		else if (regex_match(source_one_line, result_label, r_label))
+		{
+			//判断是标签
+			symbol_temp.name = result_label.str(1);
+			symbol_temp.symbol_x = symbol_type::LABEL;
+			symbol_temp.value = middle_result.size() * 4;
+			symbol_tab.push_back(symbol_temp);
+		}
+		else
+		{
+			for (ins_index = ins.begin(); ins_index != ins.end(); ins_index++)
 			{
-				//匹配到一条语句，进行处理
-
-				//分别对源输入格式串和汇编语句进行匹配，提取出输入值
-				//求得每一个位域的值
-				//已知引用，直接产生机器码
-				//未知引用，可能是前向引用，记入未知符号表
-
-				
-				if (result[1].matched)
+				if (regex_search(source_one_line, result, ins_index->r))
 				{
-					regex_match(ins_index->source_format, result_source, r_source);
-					
-					//对输入的每个符号进行分析，转化为数值
-					for (i = 2; i < 5; i++)
+					//匹配到一条语句，进行处理
+
+					//分别对源输入格式串和汇编语句进行匹配，提取出输入值
+					//求得每一个位域的值
+					//已知引用，直接产生机器码
+					//未知引用，可能是前向引用，记入未知符号表
+
+
+					if (result[1].matched)
 					{
-						if (result[i].matched)
+						regex_match(ins_index->source_format, result_source, r_source);
+
+						//对输入的每个符号进行分析，转化为数值
+						for (i = 2; i < 5; i++)
 						{
-							//提取当前参数类型
-							if (result_source.str(i) == "immediate")			symbol_x_temp = symbol_type::IMMEDIATE;
-							else if (result_source.str(i) == "SA")				symbol_x_temp = symbol_type::SA;
-							else if (result_source.str(i) == "offset")			symbol_x_temp = symbol_type::OFFSET;
-							else if (result_source.str(i) == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
-							else if (result_source.str(i) == "base")			symbol_x_temp = symbol_type::BASE;
-							else if (result_source.str(i) == "hint")			symbol_x_temp = symbol_type::HINT;
-							else if (result_source.str(i) == "RS")				symbol_x_temp = symbol_type::RS;
-							else if (result_source.str(i) == "RT")				symbol_x_temp = symbol_type::RT;
-							else if (result_source.str(i) == "RD")				symbol_x_temp = symbol_type::RD;
-
-							//判断是否为寄存器
-							s2 = result[i].str();
-							if (regex_match(s2, result_reg, reg_format))
+							if (result[i].matched)
 							{
+								//提取当前参数类型
+								if (result_source.str(i) == "immediate")			symbol_x_temp = symbol_type::IMMEDIATE;
+								else if (result_source.str(i) == "SA")				symbol_x_temp = symbol_type::SA;
+								else if (result_source.str(i) == "offset")			symbol_x_temp = symbol_type::OFFSET;
+								else if (result_source.str(i) == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
+								else if (result_source.str(i) == "base")			symbol_x_temp = symbol_type::BASE;
+								else if (result_source.str(i) == "hint")			symbol_x_temp = symbol_type::HINT;
+								else if (result_source.str(i) == "RS")				symbol_x_temp = symbol_type::RS;
+								else if (result_source.str(i) == "RT")				symbol_x_temp = symbol_type::RT;
+								else if (result_source.str(i) == "RD")				symbol_x_temp = symbol_type::RD;
 
-								//是寄存器，进一步判断合理性
-								if (symbol_x_temp == symbol_type::RS || symbol_x_temp == symbol_type::RT || symbol_x_temp == symbol_type::RD)
+								//判断是否为寄存器
+								s2 = result[i].str();
+								if (regex_match(s2, result_reg, reg_format))
 								{
-									//合理寄存器编号使用，转化为寄存器编号
-									s3 = result_reg[1].str();
-									s_stream.clear();
-									s_stream << s3;
-									s_stream >> j;
 
-									switch (symbol_x_temp)
+									//是寄存器，进一步判断合理性
+									if (symbol_x_temp == symbol_type::RS || symbol_x_temp == symbol_type::RT || symbol_x_temp == symbol_type::RD)
 									{
-									case symbol_type::RS:	bin_output.rs = j;		break;
-									case symbol_type::RT:	bin_output.rt = j;		break;
-									case symbol_type::RD:	bin_output.rd = j;		break;
-									default:break;
+										//合理寄存器编号使用，转化为寄存器编号
+										s3 = result_reg[1].str();
+										s_stream.clear();
+										s_stream << s3;
+										s_stream >> j;
+
+										switch (symbol_x_temp)
+										{
+										case symbol_type::RS:	bin_output.rs = j;		break;
+										case symbol_type::RT:	bin_output.rt = j;		break;
+										case symbol_type::RD:	bin_output.rd = j;		break;
+										default:break;
+										}
 									}
+									else
+									{
+										//产生错误
+										s_stream.clear();
+										s_stream << line;
+										s_stream >> s2;
+
+										s2 = "error: line " + s2;
+										s2 += "    用法错误   " + s1;
+										error_information.push_back(s2);
+
+										//累计错误达到上限停止汇编
+										if (error_information.size() == MAX_ERROR_NUMBER)
+											return false;
+									}
+
 								}
 								else
 								{
-									//产生错误
-									s_stream.clear();
-									s_stream << line;
-									s_stream >> s2;
+									//不是寄存器
+									//这里应该得到一个常量值
+									//如果无法解算出值来，此次假定为是前向引用
+									//无法解算的表达式将被存入未知引用表里
 
-									s2 = "error: line " + s2;
-									s2 += "    用法错误   " + s1;
-									error_information.error.push_back(s2);
-									error_information.number++;
-
-									//累计错误达到上限停止汇编
-									if (error_information.number == MAX_ERROR_NUMBER)
-										return false;
+									if (evaluation(s2, value_temp))
+									{
+										//可直接解算
+										switch (symbol_x_temp)
+										{
+										case symbol_type::IMMEDIATE:	bin_output.immediate = value_temp;	break;
+										case symbol_type::SA:;			bin_output.sa = value_temp;			break;
+										case symbol_type::OFFSET:;
+										case symbol_type::INSTR_INDEX:;
+										case symbol_type::BASE:;
+										case symbol_type::HINT:;
+										}
+									}
+									else
+									{
+										//不能解算，记入前向引用
+										unknown_symbol_temp.name = s2;
+										unknown_symbol_temp.position = middle_result.size();
+										unknown_symbol_temp.symbol_x = symbol_x_temp;
+										unknown_symbol_tab.push_back(unknown_symbol_temp);
+									}
 								}
-
 							}
 							else
 							{
-								//不是寄存器
-								//这里应该得到一个常量值
-								//如果无法解算出值来，此次假定为是前向引用
-								//无法解算的表达式将被存入未知引用表里
+								//没有可用的匹配项，结束循环
+								break;
+							}
+						}
 
-								if (evaluation(s2, value_temp))
+
+						//依据输出格式，按位填充
+						regex_match(ins_index->output_format, result_output, r_output);
+						bit_count = 0;
+						bin_temp.bin = 0;
+
+						for (i = 1; i < 7; i++)
+						{
+							if (result_output[i].matched)
+							{
+								s2 = result_output[i].str();
+								//区分开直接数和参数
+								if (s2[0] == '#')
 								{
-									//可直接解算
-									switch (symbol_x_temp)
-									{
-									case symbol_type::IMMEDIATE:	bin_output.immediate = value_temp;	break;
-									case symbol_type::SA:;			bin_output.sa = value_temp;			break;
-									case symbol_type::OFFSET:;
-									case symbol_type::INSTR_INDEX:;
-									case symbol_type::BASE:;
-									case symbol_type::HINT:;
-									}
+									//直接数，将二进制串转化为int型，并存入中间结果
+									value_temp = binary_to_uint(result_output[i].str(), bits);
+									bit_count += bits;
+
+									bin_temp.bin |= value_temp << (32 - bit_count);
 								}
 								else
 								{
-									//不能解算，记入前向引用
-									unknown_symbol_temp.name = s2;
-									unknown_symbol_temp.position = middle_result.size();
-									unknown_symbol_temp.symbol_x = symbol_x_temp;
-									unknown_symbol_tab.push_back(unknown_symbol_temp);
+									//判断是否是寄存器参数
+									if ((s2 == "RS") || (s2 == "RT") || (s2 == "RD"))
+									{
+										if (s2 == "RS"){
+											bin_temp.rs = bin_output.rs;
+										}
+										else if (s2 == "RT"){
+											bin_temp.rt = bin_output.rt;
+										}
+										else if (s2 == "RD"){
+											bin_temp.rd = bin_output.rd;
+										}
+
+										bit_count += 5;
+									}
+									else
+									{
+										if (s2 == "immediate")
+										{
+											bin_temp.immediate = bin_output.immediate;
+											bit_count += 16;
+										}
+										else if (s2 == "SA")
+										{
+
+										}
+										else if (s2 == "offset")
+										{
+
+										}
+										else if (s2 == "instr_index")
+										{
+
+										}
+										else if (s2 == "base")
+										{
+
+										}
+										else if (s2 == "hint")
+										{
+
+										}
+
+									}
 								}
-							}
-						}
-						else
-						{
-							//没有可用的匹配项，结束循环
-							break;
-						}
-					}
-
-
-					//依据输出格式，按位填充
-					regex_match(ins_index->output_format, result_output, r_output);
-					bit_count = 0;
-					bin_temp.bin = 0;
-
-					for (i = 1; i < 7; i++)
-					{
-						if (result_output[i].matched)
-						{
-							s2 = result_output[i].str();
-							//区分开直接数和参数
-							if (s2[0] == '#')
-							{
-								//直接数，将二进制串转化为int型，并存入中间结果
-								value_temp = binary_to_uint(result_output[i].str(), bits);
-								bit_count += bits;
-
-								bin_temp.bin |= value_temp << (32 -bit_count);
 							}
 							else
 							{
-								//判断是否是寄存器参数
-								if ((s2 == "RS") || (s2 == "RT") || (s2 == "RD"))
-								{
-									if (s2 == "RS"){
-										bin_temp.rs = bin_output.rs;
-									}
-									else if (s2 == "RT"){
-										bin_temp.rt = bin_output.rt;
-									}
-									else if (s2 == "RD"){
-										bin_temp.rd = bin_output.rd;
-									}
-									
-									bit_count += 5;
-								}
-								else
-								{
-									if (s2 == "immediate")
-									{
-										bin_temp.immediate = bin_output.immediate;
-										bit_count += 16;
-									}
-									else if (s2 == "SA")
-									{
-
-									}
-									else if (s2 == "offset")
-									{
-
-									}
-									else if (s2 == "instr_index")
-									{
-
-									}
-									else if (s2 == "base")
-									{
-
-									}
-									else if (s2 == "hint")
-									{
-
-									}
-
-								}
+								//没有可用的匹配项，退出循环
+								break;
 							}
 						}
-						else
-						{
-							//没有可用的匹配项，退出循环
-							break;
-						}
-					}
-					
-					//存入结果
-					middle_result.push_back(bin_temp);
-				}
-				else			
-				{
-					//空行
-				}
 
-				//区配到一条语句，并完成处理，进入下一循环
-				break;
+						//存入结果
+						middle_result.push_back(bin_temp);
+					}
+					else
+					{
+						//空行
+					}
+
+					//区配到一条语句，并完成处理，进入下一循环
+					break;
+				}
 			}
-			
+
+			//错误处理
+			if (ins_index == ins.end())
+			{
+				s_stream.clear();
+				s_stream << line;
+				s_stream >> s2;
+
+				s2 = "error: line " + s2 + "    " + s1;
+				error_information.push_back(s2);
+
+				//累计错误达到上限停止汇编
+				if (error_information.size() == MAX_ERROR_NUMBER)
+					return false;
+			}
 
 		}
-
-		//错误处理
-		if (ins_index == ins.end())
-		{
-			s_stream.clear();
-			s_stream << line;
-			s_stream >> s2;
-
-			s2 = "error: line " + s2 + "    " + s1;
-			error_information.error.push_back(s2);
-			error_information.number++;
-
-			//累计错误达到上限停止汇编
-			if (error_information.number == MAX_ERROR_NUMBER)
-				return false;
-		}
-		
+	
 		//行号计数
 		line++;
 	}
@@ -665,36 +691,42 @@ bool assembly_execute(void)
 	//进行第二次扫描，替换前向引用符号
 	for (auto i = unknown_symbol_tab.begin(); i != unknown_symbol_tab.end(); i++)
 	{
+		if (evaluation(i->name, value_temp))
+		{
 
 
 
+		}
+		else
+		{
+			//第二次仍无法解算，计入错误
+			s2 = "无法解算：" + i->name;
+			error_information.push_back(s2);
+
+			//累计错误达到上限停止汇编
+			if (error_information.size() == MAX_ERROR_NUMBER)
+				return false;
+		}
 	}
 
 
-	//得到完全的二进制数，输出到文件
-	if (output_to_file())
+	if (error_information.empty())
 	{
-		cout << "输出文件成功" << endl;
+		//得到完全的二进制数，输出到文件
+		if (output_to_file())
+		{
+			cout << "输出文件成功" << endl;
+			return true;
+		}
+		else
+		{
+			cout << "输出文件失败" << endl;
+			return false;
+		}
 	}
 	else
-	{
-		cout << "输出文件失败" << endl;
-	}
-
-
-
-
-
-
-
-	if (error_information.number != 0)
-	{
 		return false;
-	}
-	else
-	{
-		return true;
-	}
+
 }
 
 
@@ -748,9 +780,9 @@ int main(int argc, char *argv[])
 	else
 	{
 		cout << "\n\n汇编失败" << endl;
-		cout << "错误：" << error_information.number << endl;
+		cout << "错误：" << error_information.size() << endl;
 
-		for (auto i = error_information.error.begin(); i != error_information.error.end(); i++)
+		for (auto i = error_information.begin(); i != error_information.end(); i++)
 		{
 			cout << *i << endl;
 		}
