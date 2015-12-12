@@ -61,6 +61,41 @@ vector<symbol_str> symbol_tab;
 
 
 
+/* 前向引有符号表 */
+/* 记录未知的符号引用，在下一轮插补时参考 */
+
+struct unknown_symbol_str{
+	string name;
+	symbol_type symbol_x;
+	int position;
+};
+
+vector<unknown_symbol_str> unknown_symbol_tab;
+
+
+/*
+	向符号表添加符号
+	如果符号表已有相应的符号，返回错误
+*/
+bool symbol_add(symbol_str &ss)
+{
+	for (auto i = symbol_tab.begin(); i != symbol_tab.end(); i++)
+	{
+		if (i->name == ss.name)
+		{
+			return false;
+		}
+	}
+
+	symbol_tab.push_back(ss);
+
+	return true;
+}
+
+
+
+
+
 
 /* 中间结果 */
 /* 动态向量方式存储 */
@@ -103,18 +138,6 @@ union bin_str{
 
 
 vector<bin_str> middle_result;
-
-
-/* 前向引有符号表 */
-/* 记录未知的符号引用，在下一轮插补时参考 */
-
-struct unknown_symbol_str{
-	string name;
-	symbol_type symbol_x;
-	int position;
-};
-
-vector<unknown_symbol_str> unknown_symbol_tab;
 
 
 
@@ -457,7 +480,13 @@ bool assembly_execute(void)
 			symbol_temp.name = result_define.str(1);
 			symbol_temp.symbol_string = result_define.str(2);
 			symbol_temp.symbol_x = symbol_type::DEFINE;
-			symbol_tab.push_back(symbol_temp);
+
+			if (!symbol_add(symbol_temp))
+			{
+				//符号名重复
+				s2 = "符号名重复：" + symbol_temp.name;
+				error_information.push_back(s2);
+			}
 		}
 		else if (regex_match(source_one_line, result_label, r_label))
 		{
@@ -465,7 +494,13 @@ bool assembly_execute(void)
 			symbol_temp.name = result_label.str(1);
 			symbol_temp.symbol_x = symbol_type::LABEL;
 			symbol_temp.value = middle_result.size() * 4;
-			symbol_tab.push_back(symbol_temp);
+
+			if (!symbol_add(symbol_temp))
+			{
+				//符号名重复
+				s2 = "符号名重复：" + symbol_temp.name;
+				error_information.push_back(s2);
+			}
 		}
 		else
 		{
