@@ -43,6 +43,9 @@ using namespace std;
 string work_path;
 char buf[1000];
 
+
+enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT };
+
 /* 符号表 */
 /* 符号表采用动态向量方式存储 */
 /* 符号名最长不作限制 */
@@ -50,12 +53,11 @@ char buf[1000];
 struct symbol_str{
 	string name;
 	int value;
+	symbol_type symbol_x;
 };
 
-struct symbol_tab_str{
-	int number;
-	vector<symbol_str> symbol_vector;
-}symbol_tab;
+vector<symbol_str> symbol_tab;
+
 
 
 
@@ -98,25 +100,22 @@ union bin_str{
 	volatile char32_t bin;
 };
 
-struct middle_result_str{
-	int count;
-	vector<bin_str> bin_data;
-}middle_result;
+
+vector<bin_str> middle_result;
 
 
 /* 前向引有符号表 */
 /* 记录未知的符号引用，在下一轮插补时参考 */
-enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT };
 
 struct unknown_symbol_str{
 	string name;
 	symbol_type symbol_x;
+	int position;
 };
 
-struct unknown_symbol_tab_str{
-	int count;
-	vector<unknown_symbol_str> unknown_symbol;
-}unknown_symbol_tab;
+vector<unknown_symbol_str> unknown_symbol_tab;
+
+
 
 /* 输出结果 */
 /* 输出到源文件同目录下 */
@@ -135,11 +134,7 @@ struct INS_STR{
 	string output_format;
 };
 
-struct ins_str{
-	int count;
-	vector<INS_STR>  ins_tab;
-}ins;
-
+vector<INS_STR>  ins;
 vector<string> ins_error_information;
 
 bool instruction_compile(void)
@@ -166,31 +161,15 @@ bool instruction_compile(void)
 	instruction_file_stream.close();
 	instruction_file_stream.open(instruction_path);
 
-	regex r_instruction_format;
-	regex r_source_input;
+	regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$");
+	regex r_source_input("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
 	smatch result;
 	string ins_str;
 	string str_temp;
 
 	INS_STR ins_temp;
 
-	ins.count = 0;
 	instruction_file_stream.seekg(0);
-
-
-	try{
-		r_instruction_format = "^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$";
-	}
-	catch (regex_error e){
-		cout << e.what() << "\ncode:" << e.code() << endl;
-	}
-
-	try{
-		r_source_input = "^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$";
-	}
-	catch (regex_error e){
-		cout << e.what() << "\ncode:" << e.code() << endl;
-	}
 
 	while (instruction_file_stream.getline(buf, 300))
 	{
@@ -236,8 +215,7 @@ bool instruction_compile(void)
 					cout << e.what() << "\ncode:" << e.code() << endl;
 				}
 
-				ins.ins_tab.push_back(ins_temp);
-				ins.count++;
+				ins.push_back(ins_temp);
 			}
 			else{
 				//记录未识别指令
@@ -287,7 +265,7 @@ bool output_to_file(void)
 
 
 	//循环输出二进制数
-	for (auto i = middle_result.bin_data.begin(); i != middle_result.bin_data.end(); )
+	for (auto i = middle_result.begin(); i != middle_result.end(); )
 	{
 		temp = i->bin;
 		str_temp = "";
@@ -316,7 +294,7 @@ bool output_to_file(void)
 		}
 
 		i++;
-		if (i != middle_result.bin_data.end())
+		if (i != middle_result.end())
 			output_file_stream << str_temp << "," << endl;
 		else
 			output_file_stream << str_temp << ";" << endl;
@@ -375,12 +353,6 @@ struct error_information_str{
 	vector<string> error;
 }error_information;
 
-
-struct assembly_information_str{
-	int size;
-
-}assembly_information;
-
 string source_file_path;
 
 struct source_input_str{
@@ -436,8 +408,10 @@ bool assembly_execute(void)
 	int bit_count;
 	int bits;
 	char32_t value_temp;
+	unknown_symbol_str unknown_symbol_temp;
+	symbol_type symbol_x_temp;
 
-	auto ins_index = ins.ins_tab.begin();
+	auto ins_index = ins.begin();
 
 
 
@@ -455,7 +429,6 @@ bool assembly_execute(void)
 	}
 
 	//初始化变量
-	assembly_information.size = 0;
 	error_information.number = 0;
 	line = 1;
 
@@ -465,10 +438,10 @@ bool assembly_execute(void)
 	{
 		s1 = buf;
 
-		//去除注释
+		//去除单行注释
 		source_one_line = regex_replace(s1, r_comment, "$1");
 
-		for (ins_index = ins.ins_tab.begin(); ins_index != ins.ins_tab.end(); ins_index++)
+		for (ins_index = ins.begin(); ins_index != ins.end(); ins_index++)
 		{
 			if (regex_search(source_one_line, result, ins_index->r))
 			{
@@ -489,28 +462,38 @@ bool assembly_execute(void)
 					{
 						if (result[i].matched)
 						{
+							//提取当前参数类型
+							if (result_source.str(i) == "immediate")			symbol_x_temp = symbol_type::IMMEDIATE;
+							else if (result_source.str(i) == "SA")				symbol_x_temp = symbol_type::SA;
+							else if (result_source.str(i) == "offset")			symbol_x_temp = symbol_type::OFFSET;
+							else if (result_source.str(i) == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
+							else if (result_source.str(i) == "base")			symbol_x_temp = symbol_type::BASE;
+							else if (result_source.str(i) == "hint")			symbol_x_temp = symbol_type::HINT;
+							else if (result_source.str(i) == "RS")				symbol_x_temp = symbol_type::RS;
+							else if (result_source.str(i) == "RT")				symbol_x_temp = symbol_type::RT;
+							else if (result_source.str(i) == "RD")				symbol_x_temp = symbol_type::RD;
+
 							//判断是否为寄存器
 							s2 = result[i].str();
 							if (regex_match(s2, result_reg, reg_format))
 							{
-								s3 = result_reg[1].str();
 
 								//是寄存器，进一步判断合理性
-								s2 = result_source[i].str();
-								if ((s2 == "RS") || (s2 == "RT") || (s2 == "RD"))
+								if (symbol_x_temp == symbol_type::RS || symbol_x_temp == symbol_type::RT || symbol_x_temp == symbol_type::RD)
 								{
 									//合理寄存器编号使用，转化为寄存器编号
+									s3 = result_reg[1].str();
 									s_stream.clear();
 									s_stream << s3;
 									s_stream >> j;
 
-									if (s2 == "RS")
-										bin_output.rs = j;
-									else if (s2 == "RT")
-										bin_output.rt = j;
-									else if (s2 == "RD")
-										bin_output.rd = j;
-
+									switch (symbol_x_temp)
+									{
+									case symbol_type::RS:	bin_output.rs = j;		break;
+									case symbol_type::RT:	bin_output.rt = j;		break;
+									case symbol_type::RD:	bin_output.rd = j;		break;
+									default:break;
+									}
 								}
 								else
 								{
@@ -519,7 +502,7 @@ bool assembly_execute(void)
 									s_stream << line;
 									s_stream >> s2;
 
-									s2 = "error: line " + s2 ;
+									s2 = "error: line " + s2;
 									s2 += "    用法错误   " + s1;
 									error_information.error.push_back(s2);
 									error_information.number++;
@@ -540,47 +523,29 @@ bool assembly_execute(void)
 								if (evaluation(s2, value_temp))
 								{
 									//可直接解算
-									
-
-									if (result_source.str(i) == "immediate")
+									switch (symbol_x_temp)
 									{
-										bin_output.immediate = value_temp;
+									case symbol_type::IMMEDIATE:	bin_output.immediate = value_temp;	break;
+									case symbol_type::SA:;			bin_output.sa = value_temp;			break;
+									case symbol_type::OFFSET:;
+									case symbol_type::INSTR_INDEX:;
+									case symbol_type::BASE:;
+									case symbol_type::HINT:;
 									}
-									else if (result_source.str(i) == "SA")
-									{
-
-									}
-									else if (result_source.str(i) == "offset")
-									{
-
-									}
-									else if (result_source.str(i) == "instr_index")
-									{
-
-									}
-									else if (result_source.str(i) == "base")
-									{
-
-									}
-									else if (result_source.str(i) == "hint")
-									{
-
-									}
-
-
 								}
 								else
 								{
 									//不能解算，记入前向引用
-
+									unknown_symbol_temp.name = s2;
+									unknown_symbol_temp.position = middle_result.size();
+									unknown_symbol_temp.symbol_x = symbol_x_temp;
+									unknown_symbol_tab.push_back(unknown_symbol_temp);
 								}
-
 							}
-
 						}
 						else
 						{
-							//没有可用的匹配项，退出循环
+							//没有可用的匹配项，结束循环
 							break;
 						}
 					}
@@ -661,9 +626,7 @@ bool assembly_execute(void)
 					}
 					
 					//存入结果
-					middle_result.bin_data.push_back(bin_temp);
-					middle_result.count++;
-					assembly_information.size++;
+					middle_result.push_back(bin_temp);
 				}
 				else			
 				{
@@ -678,7 +641,7 @@ bool assembly_execute(void)
 		}
 
 		//错误处理
-		if (ins_index == ins.ins_tab.end())
+		if (ins_index == ins.end())
 		{
 			s_stream.clear();
 			s_stream << line;
@@ -700,7 +663,7 @@ bool assembly_execute(void)
 
 
 	//进行第二次扫描，替换前向引用符号
-	for (auto i = unknown_symbol_tab.unknown_symbol.begin(); i != unknown_symbol_tab.unknown_symbol.end(); i++)
+	for (auto i = unknown_symbol_tab.begin(); i != unknown_symbol_tab.end(); i++)
 	{
 
 
@@ -768,21 +731,19 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		cout << "读取指令脚本成功，" << "共扫描到" << ins.count << "条指令" << endl;
+		cout << "读取指令脚本成功，" << "共扫描到" << ins.size() << "条指令" << endl;
 		cout << "未识别指令：" << endl;
 		for (auto i = ins_error_information.begin(); i != ins_error_information.end(); i++)
 		{
 			cout << *i << endl;
 		}
-
-
 	}
 
 	//启动汇编
 	if (assembly_execute())
 	{
 		cout << "汇编完成" << endl;
-		cout << "size:" << assembly_information.size << endl;
+		cout << "size:" << middle_result.size() << endl;
 	}
 	else
 	{
