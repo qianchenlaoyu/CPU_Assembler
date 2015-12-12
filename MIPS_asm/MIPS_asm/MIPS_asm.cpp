@@ -212,16 +212,16 @@ bool instruction_compile(void)
 				{
 					str_temp += "(?:";						//区分带参情况
 					str_temp += "\\s+";
-					str_temp += "(\\w+)";					//第二组
+					str_temp += "([^,]+?)";					//第二组
 
 					if (result[3].matched)
 					{
-						str_temp += "(?:\\s*,\\s*(\\w+))?";			//第三组
+						str_temp += "(?:\\s*,\\s*([^,]+?))?";			//第三组
 					}
 
 					if (result[4].matched)
 					{
-						str_temp += "(?:\\s*,\\s*(\\w+))?";			//第四组
+						str_temp += "(?:\\s*,\\s*([^,]+?))?";			//第四组
 					}
 
 					str_temp += ")?";
@@ -421,6 +421,7 @@ bool assembly_execute(void)
 	int line;
 	string s1,s2,s3;
 	string str_reg;
+	string source_one_line;
 	smatch result;
 	ifstream source_file_stream;
 	stringstream s_stream;
@@ -428,6 +429,7 @@ bool assembly_execute(void)
 	regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$",regex::icase);
 	regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
 	regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
+	regex r_comment("^(.*?)(\\s*//.*)$");
 	smatch result_reg;
 	smatch result_source;
 	smatch result_output;
@@ -462,9 +464,13 @@ bool assembly_execute(void)
 	while (source_file_stream.getline(buf,500))
 	{
 		s1 = buf;
+
+		//去除注释
+		source_one_line = regex_replace(s1, r_comment, "$1");
+
 		for (ins_index = ins.ins_tab.begin(); ins_index != ins.ins_tab.end(); ins_index++)
 		{
-			if (regex_search(s1, result, ins_index->r))
+			if (regex_search(source_one_line, result, ins_index->r))
 			{
 				//匹配到一条语句，进行处理
 
