@@ -337,6 +337,9 @@ bool output_to_file(void)
 
 
 
+regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)");
+
+
 
 /*
 	表达式求值
@@ -349,11 +352,70 @@ bool evaluation(string &exp, char32_t &value)
 	//不能解引用，返回失败
 	//表达式计算错误，返回失败
 
-
+	string s1, s2, s3;
 	string postexp;
-	double value_temp;
+	stringstream s_stream;
 
-	if (!trans(exp, postexp))
+	double value_temp;
+	int replace_count;
+	int scan_count;
+
+	s2 = exp;
+	do{
+		scan_count = 0;
+		replace_count = 0;
+		s3 = s2;
+		s2.clear();
+		for (sregex_iterator it(s3.begin(), s3.end(), r_scan_symbol), end_it; it != end_it; it++)
+		{
+			if ((*it)[1].matched)
+			{
+				scan_count++;
+				s1 = it->str(1);
+
+				for (auto index = symbol_tab.begin(); index != symbol_tab.end(); index++)
+				{
+					if (s1 == index->name)
+					{
+						if (index->symbol_x == symbol_type::DEFINE)
+						{
+							//宏定义，文本替换
+							s1 = index->symbol_string;
+							replace_count++;
+							break;
+						}
+						else if (index->symbol_x == symbol_type::LABEL)
+						{
+							//标签，数值转文本再替换
+							s_stream.clear();
+							s_stream << index->value;
+							s_stream >> s1;
+							replace_count++;
+							break;
+						}
+					}
+				}
+
+				s2 += s1;
+			}
+			else
+			{
+				s1 = it->str();
+				s2 += s1;
+			}
+		}
+	} while (replace_count);	//replace_count != 0,可能还有嵌套的符号，继续进行扫描和替换
+
+
+
+	//此时应该所有的符号都被替换掉了，不然就是错误的
+	if (scan_count != 0)
+	{
+		//还有未识别的符号，返回错误
+		return false;
+	}
+
+	if (!trans(s2, postexp))
 	{
 		return false;
 	}
@@ -363,6 +425,7 @@ bool evaluation(string &exp, char32_t &value)
 		return false;
 	}
 
+	//求值完成，返回表达式的值
 	value = (char32_t)value_temp;
 	return true;
 }
