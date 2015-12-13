@@ -36,6 +36,8 @@ using namespace std;
 
 
 #define MAX_ERROR_NUMBER	5
+#define MAX_OFFSET_BACK		-32768
+#define MAX_OFFSET_FRONT	32767
 
 
 
@@ -487,6 +489,7 @@ regex r_null_line("^\\s*$");
 	error_code用于返回错误代码
 	1、用法错误
 	2、无法解算
+	3、偏移量溢出
 */
 bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, int position, int &error_code)
 {
@@ -505,7 +508,13 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	int bits;
 	int i, j;
 
-
+	//添加一条指令的空间
+	if (position == -1)
+	{
+		middle_result.push_back(bin_temp);
+		position = middle_result.size() - 1;
+	}
+	
 	regex_match(source_string, result_source_string,ins_index->r);
 	regex_match(ins_index->source_format, result_source_format, r_source);
 
@@ -564,9 +573,34 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 					//可直接解算
 					switch (symbol_x_temp)
 					{
-					case symbol_type::IMMEDIATE:	bin_output.immediate = value_temp;	break;
-					case symbol_type::SA:;			bin_output.sa = value_temp;			break;
+					case symbol_type::IMMEDIATE:		bin_output.immediate = value_temp;	break;
+					case symbol_type::SA:;				bin_output.sa = value_temp;			break;
 					case symbol_type::OFFSET:;
+						//偏移量 = 目标地址 - 当前PC
+					{
+						int pc;
+						signed int offset;
+
+						if (position == -1)
+							pc = middle_result.size() * 4;
+						else
+							pc = position * 4;
+
+						offset = value_temp - pc;
+						offset /= 4;
+
+						if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
+						{
+							//错误代码3、偏移量溢出
+							error_code = 3;
+							return false;
+						}
+
+						//转换为对应补码的16位二进制
+						bin_output.offset = 65536 + offset;
+					}break;
+
+
 					case symbol_type::INSTR_INDEX:;
 					case symbol_type::BASE:;
 					case symbol_type::HINT:;
@@ -628,8 +662,8 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 				case symbol_type::RT:			bin_temp.rt = bin_output.rt;				bit_count += 5;		break;
 				case symbol_type::RD:			bin_temp.rd = bin_output.rd;				bit_count += 5;		break;
 				case symbol_type::IMMEDIATE:	bin_temp.immediate = bin_output.immediate;	bit_count += 16;	break;
-				case symbol_type::SA:
-				case symbol_type::OFFSET:
+				case symbol_type::SA:			bin_temp.sa = bin_output.sa;				bit_count += 5;		break;
+				case symbol_type::OFFSET:		bin_temp.offset = bin_output.offset;		bit_count += 16;	break;
 				case symbol_type::INSTR_INDEX:
 				case symbol_type::BASE:
 				case symbol_type::HINT:
@@ -645,14 +679,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	}
 
 	//存入结果
-	if (position == -1)
-	{
-		middle_result.push_back(bin_temp);
-	}
-	else
-	{
-		middle_result[position] = bin_temp;
-	}
+	middle_result[position] = bin_temp;
 
 	return true;
 }
@@ -753,7 +780,7 @@ bool assembly_execute(void)
 					{
 						//解算失败，计入未知符号表
 						unknown_symbol_temp.name = source_one_line;
-						unknown_symbol_temp.position = middle_result.size();
+						unknown_symbol_temp.position = middle_result.size() - 1;
 						unknown_symbol_temp.symbol_x = symbol_type::STATEMENT;
 						unknown_symbol_temp.ins_index = ins_index;
 						unknown_symbol_temp.line = line;
@@ -808,6 +835,12 @@ bool assembly_execute(void)
 			{
 				//无法解算
 				s2 = "无法解算：" + i->name;
+				error_information.push_back(s2);
+			}
+			else if (error_code == 3)
+			{
+				//偏移量溢出
+				s2 = "偏移量溢出 " + i->name;
 				error_information.push_back(s2);
 			}
 		}
