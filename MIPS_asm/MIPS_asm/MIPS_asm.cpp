@@ -31,7 +31,7 @@
 #include "expression.h"
 
 using namespace std;
-
+//using namespace regex;
 
 
 
@@ -526,7 +526,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	string s1, s2;
 	int bit_count;
 	int bits;
-	int i, j;
+	int i;
 
 	int pc;
 	signed int offset;
@@ -560,94 +560,67 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			else if (s2 == "RT")				symbol_x_temp = symbol_type::RT;
 			else if (s2 == "RD")				symbol_x_temp = symbol_type::RD;
 
-			//判断是否为寄存器
+			//不区分寄存器和其它参数
+			//这里应该得到一个常量值
+			//如果无法解算出值来，返回失败
 			s1 = result_source_string[i].str();
-			if (regex_match(s1, result_reg, r_reg_format))
+			if (evaluation(s1, value_temp))
 			{
-				//是寄存器，进一步判断合理性
-				if (symbol_x_temp == symbol_type::RS || symbol_x_temp == symbol_type::RT || symbol_x_temp == symbol_type::RD)
+				//可直接解算
+				switch (symbol_x_temp)
 				{
-					//合理寄存器编号使用，转化为寄存器编号
-					s_stream.clear();
-					s_stream << result_reg[1].str();
-					s_stream >> j;
+				case symbol_type::IMMEDIATE:		bin_output.immediate = value_temp;	break;
+				case symbol_type::SA:				bin_output.sa = value_temp;			break;
+				case symbol_type::OFFSET:
+				{
+					//偏移量 = 目标地址 - 当前PC
+					pc = position * 4;
+					offset = value_temp - pc;
+					offset /= 4;
 
-					switch (symbol_x_temp)
+					if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
 					{
-					case symbol_type::RS:	bin_output.rs = j;		break;
-					case symbol_type::RT:	bin_output.rt = j;		break;
-					case symbol_type::RD:	bin_output.rd = j;		break;
-					default:break;
+						//错误代码3、偏移量溢出
+						error_code = 3;
+						return false;
 					}
-				}
-				else
+
+					//转换为对应补码的16位二进制
+					bin_output.offset = 65536 + offset;
+				}break;
+				case symbol_type::TARGET:
 				{
-					//返回错误代码，1、用法错误
-					error_code = 1;
-					return false;
+					//26位偏移量,在当前指令附近的256MB的范围内跳转
+					//偏移量 = 目标地址 - 当前PC
+					//补码 = 26位模 + 偏移量
+					pc = position * 4;
+					target = value_temp - pc;
+					target /= 4;
+
+					if (target<MAX_TARGET_BACK || target>MAX_TARGET_FRONT)
+					{
+						//错误代码3、偏移量溢出
+						error_code = 3;
+						return false;
+					}
+
+					//转换为对应补码的26位二进制
+					bin_output.target = 67108864 + target;
+				}break;
+				case symbol_type::INSTR_INDEX:break;
+				case symbol_type::BASE:break;
+				case symbol_type::HINT:break;
+				case symbol_type::RS:				bin_output.rs = value_temp;			break;
+				case symbol_type::RT:				bin_output.rt = value_temp;			break;
+				case symbol_type::RD:				bin_output.rd = value_temp;			break;
 				}
 			}
 			else
 			{
-				//不是寄存器
-				//这里应该得到一个常量值
-				//如果无法解算出值来，返回失败
-
-				if (evaluation(s1, value_temp))
-				{
-					//可直接解算
-					switch (symbol_x_temp)
-					{
-					case symbol_type::IMMEDIATE:		bin_output.immediate = value_temp;	break;
-					case symbol_type::SA:;				bin_output.sa = value_temp;			break;
-					case symbol_type::OFFSET:;						
-					{
-						//偏移量 = 目标地址 - 当前PC
-						pc = position * 4;
-						offset = value_temp - pc;
-						offset /= 4;
-
-						if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
-						{
-							//错误代码3、偏移量溢出
-							error_code = 3;
-							return false;
-						}
-
-						//转换为对应补码的16位二进制
-						bin_output.offset = 65536 + offset;
-					}break;
-					case symbol_type::TARGET:
-					{
-						//26位偏移量,在当前指令附近的256MB的范围内跳转
-						//偏移量 = 目标地址 - 当前PC
-						//补码 = 26位模 + 偏移量
-						pc = position * 4;
-						target = value_temp - pc;
-						target /= 4;
-
-						if (target<MAX_TARGET_BACK || target>MAX_TARGET_FRONT)
-						{
-							//错误代码3、偏移量溢出
-							error_code = 3;
-							return false;
-						}
-
-						//转换为对应补码的26位二进制
-						bin_output.target = 67108864 + target;
-					}break;
-					case symbol_type::INSTR_INDEX:
-					case symbol_type::BASE:;
-					case symbol_type::HINT:;
-					}
-				}
-				else
-				{
-					//返回错误代码，2、无法解算
-					error_code = 2;
-					return false;
-				}
-			}
+				//返回错误代码，2、无法解算
+				error_code = 2;
+				return false;
+			}	
 		}
 		else
 		{
