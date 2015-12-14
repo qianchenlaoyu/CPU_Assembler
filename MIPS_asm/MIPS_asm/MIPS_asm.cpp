@@ -47,7 +47,7 @@ using namespace std;
 
 string work_path;
 char buf[1000];
-
+int address_count;
 
 enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, X_OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL, STATEMENT};
 
@@ -112,7 +112,6 @@ bool symbol_add(symbol_str &ss)
 /* 使用结构体位域,直接合成32位宽的2进制数 */
 struct middle_result_str{
 	int line;
-	string source_string;
 	int address;
 	union{
 		struct{
@@ -147,6 +146,7 @@ struct middle_result_str{
 		};
 
 		volatile char32_t bin;
+		volatile char arr[4];
 	}bin_str;
 };
 
@@ -583,17 +583,9 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	int bits;
 	int i;
 
-	int pc;
 	signed int offset;
 	signed int target;
 
-	//添加一条指令的空间
-	if (position == -1)
-	{
-		middle_result.push_back(middle_result_temp);
-		position = middle_result.size() - 1;
-	}
-	
 	regex_match(source_string, result_source_string,ins_index->r);
 	regex_match(ins_index->source_format, result_source_format, r_instruction_source);
 
@@ -630,8 +622,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 				case symbol_type::OFFSET:
 				{
 					//偏移量 = 目标地址 - 当前PC
-					pc = position * 4;
-					offset = value_temp - pc;
+					offset = value_temp - position;
 					offset /= 4;
 
 					if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
@@ -665,8 +656,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 					//26位偏移量,在当前指令附近的256MB的范围内跳转
 					//偏移量 = 目标地址 - 当前PC
 					//补码 = 26位模 + 偏移量
-					pc = position * 4;
-					target = value_temp - pc;
+					target = value_temp - position;
 					target /= 4;
 
 					if (target<MAX_TARGET_BACK || target>MAX_TARGET_FRONT)
@@ -769,7 +759,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	}
 
 	//存入结果
-	middle_result[position] = middle_result_temp;
+	middle_result[position/4] = middle_result_temp;
 
 	return true;
 }
@@ -794,6 +784,7 @@ bool assembly_execute(void)
 	unknown_symbol_str unknown_symbol_temp;
 	symbol_str	symbol_temp;
 	middle_compile_information_str middle_compile_information_temp;
+	middle_result_str middle_result_temp;
 
 	auto ins_index = ins.begin();
 
@@ -813,7 +804,7 @@ bool assembly_execute(void)
 
 	//初始化变量
 	line = 1;
-
+	address_count = 0;
 
 	//取一行文本
 	while (source_file_stream.getline(buf,500))
@@ -851,7 +842,7 @@ bool assembly_execute(void)
 			//判断是标签
 			symbol_temp.name = result_label.str(1);
 			symbol_temp.symbol_x = symbol_type::LABEL;
-			symbol_temp.value = middle_result.size() * 4;
+			symbol_temp.value = address_count;
 
 			if (!symbol_add(symbol_temp))
 			{
@@ -868,7 +859,11 @@ bool assembly_execute(void)
 				if (regex_match(source_one_line, result, ins_index->r))
 				{
 					//匹配到一条语句，进行处理
-					if (one_statement(source_one_line, ins_index, -1, error_code))
+
+					//添加一条指令的空间
+					middle_result.push_back(middle_result_temp);
+	
+					if (one_statement(source_one_line, ins_index, address_count, error_code))
 					{
 						//解算成功
 					}
@@ -876,7 +871,7 @@ bool assembly_execute(void)
 					{
 						//解算失败，计入未知符号表
 						unknown_symbol_temp.name = source_one_line;
-						unknown_symbol_temp.position = middle_result.size() - 1;
+						unknown_symbol_temp.position = address_count;
 						unknown_symbol_temp.symbol_x = symbol_type::STATEMENT;
 						unknown_symbol_temp.ins_index = ins_index;
 						unknown_symbol_temp.line = line;
@@ -884,7 +879,10 @@ bool assembly_execute(void)
 					}
 
 					middle_compile_information_temp.bin_mask = 1;
-					middle_compile_information_temp.address = middle_result.size() - 1;
+					middle_compile_information_temp.address = address_count;
+
+					address_count += 4;			//地址计数
+
 					//区配到一条语句，并完成处理，结束循环
 					break;
 				}
@@ -1019,7 +1017,7 @@ int main(int argc, char *argv[])
 	if (assembly_execute())
 	{
 		cout << "汇编完成" << endl;
-		cout << "size:" << middle_result.size() << endl;
+		cout << "size:" << address_count << endl;
 	}
 	else
 	{
