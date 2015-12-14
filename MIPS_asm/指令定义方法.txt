@@ -32,7 +32,7 @@
 	target		26位立即数
 	offset      16位带符号偏移
 	instr_index 26位带符号偏移
-	base		5位基址
+	base		5位寄存器号，用作基址
 	hint		
 	func		6位扩展的操作码
 

@@ -148,6 +148,16 @@ vector<bin_str> middle_result;
 
 
 
+
+regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
+regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$");
+regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
+regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");
+regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");
+regex r_label("^([a-zA-Z]\\w*):$");
+
+regex r_null_line("^\\s*$");
+
 /* 输出结果 */
 /* 输出到源文件同目录下 */
 /* 与源文件同名，后缀为.coe */
@@ -205,8 +215,16 @@ bool instruction_compile(void)
 	while (instruction_file_stream.getline(buf, 300))
 	{
 		//对整条指令格式串进行匹配
-		ins_str = buf;
-		if (regex_match(ins_str, result, r_instruction_format))
+		str_temp = buf;
+
+		//去除单行注释
+		ins_str = regex_replace(str_temp, r_comment, "$1");
+
+		if (regex_match(ins_str, result, r_null_line))
+		{
+			//空行
+		}
+		else if (regex_match(ins_str, result, r_instruction_format))
 		{
 			ins_temp.source_format = result.str(1);
 			ins_temp.output_format = result.str(2);
@@ -474,16 +492,6 @@ struct bin_output_str{
 }bin_output;
 
 
-
-regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
-regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$");
-regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
-regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");
-regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");
-regex r_label("^([a-zA-Z]\\w*):$");
-regex r_null_line("^\\s*$");
-
-
 /*
 	解析一条语句
 	position: -1表示向尾后添加元素，>=0表示按下标存储
@@ -491,6 +499,7 @@ regex r_null_line("^\\s*$");
 	1、用法错误
 	2、无法解算
 	3、偏移量溢出
+	4、指令未支持或不完整
 */
 bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, int position, int &error_code)
 {
@@ -696,6 +705,14 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 		}
 	}
 
+	//核查二进制结果
+	if (bit_count != 32)
+	{
+		//错误代码4、指令未支持或不完整
+		error_code = 4;
+		return false;
+	}
+
 	//存入结果
 	middle_result[position] = bin_temp;
 
@@ -843,24 +860,16 @@ bool assembly_execute(void)
 			s_stream >> s2;
 			s2 = "error: line " + s2;
 
-			if (error_code == 1)
+			switch (error_code)
 			{
-				//用法错误
-				s2 += "    用法错误   " + i->name;
-				error_information.push_back(s2);
+			case 1:		s2 += "用法错误";				break;
+			case 2:		s2 += "无法解算";				break;
+			case 3:		s2 += "偏移量溢出 ";			break;
+			case 4:		s2 += "指令未支持或不完整 ";	break;
 			}
-			else if (error_code == 2)
-			{
-				//无法解算
-				s2 = "无法解算：" + i->name;
-				error_information.push_back(s2);
-			}
-			else if (error_code == 3)
-			{
-				//偏移量溢出
-				s2 = "偏移量溢出 " + i->name;
-				error_information.push_back(s2);
-			}
+
+			s2 += i->name;
+			error_information.push_back(s2);
 		}
 	}
 
@@ -918,10 +927,13 @@ int main(int argc, char *argv[])
 	else
 	{
 		cout << "读取指令脚本成功，" << "共扫描到" << ins.size() << "条指令" << endl;
-		cout << "未识别指令：" << endl;
-		for (auto i = ins_error_information.begin(); i != ins_error_information.end(); i++)
+		if (!ins_error_information.empty())
 		{
-			cout << *i << endl;
+			cout << "未识别指令：" << endl;
+			for (auto i = ins_error_information.begin(); i != ins_error_information.end(); i++)
+			{
+				cout << *i << endl;
+			}
 		}
 	}
 
