@@ -38,7 +38,8 @@ using namespace std;
 #define MAX_ERROR_NUMBER	5
 #define MAX_OFFSET_BACK		-32768
 #define MAX_OFFSET_FRONT	32767
-
+#define MAX_TARGET_BACK		-33554432
+#define MAX_TARGET_FRONT	33554431
 
 
 
@@ -508,6 +509,10 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	int bits;
 	int i, j;
 
+	int pc;
+	signed int offset;
+	signed int target;
+
 	//添加一条指令的空间
 	if (position == -1)
 	{
@@ -528,6 +533,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			if (s2 == "immediate")				symbol_x_temp = symbol_type::IMMEDIATE;
 			else if (s2 == "SA")				symbol_x_temp = symbol_type::SA;
 			else if (s2 == "offset")			symbol_x_temp = symbol_type::OFFSET;
+			else if (s2 == "target")			symbol_x_temp = symbol_type::TARGET;
 			else if (s2 == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
 			else if (s2 == "base")				symbol_x_temp = symbol_type::BASE;
 			else if (s2 == "hint")				symbol_x_temp = symbol_type::HINT;
@@ -575,17 +581,10 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 					{
 					case symbol_type::IMMEDIATE:		bin_output.immediate = value_temp;	break;
 					case symbol_type::SA:;				bin_output.sa = value_temp;			break;
-					case symbol_type::OFFSET:;
-						//偏移量 = 目标地址 - 当前PC
+					case symbol_type::OFFSET:;						
 					{
-						int pc;
-						signed int offset;
-
-						if (position == -1)
-							pc = middle_result.size() * 4;
-						else
-							pc = position * 4;
-
+						//偏移量 = 目标地址 - 当前PC
+						pc = position * 4;
 						offset = value_temp - pc;
 						offset /= 4;
 
@@ -599,9 +598,26 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 						//转换为对应补码的16位二进制
 						bin_output.offset = 65536 + offset;
 					}break;
+					case symbol_type::TARGET:
+					{
+						//26位偏移量,在当前指令附近的256MB的范围内跳转
+						//偏移量 = 目标地址 - 当前PC
+						//补码 = 26位模 + 偏移量
+						pc = position * 4;
+						target = value_temp - pc;
+						target /= 4;
 
+						if (target<MAX_TARGET_BACK || target>MAX_TARGET_FRONT)
+						{
+							//错误代码3、偏移量溢出
+							error_code = 3;
+							return false;
+						}
 
-					case symbol_type::INSTR_INDEX:;
+						//转换为对应补码的26位二进制
+						bin_output.target = 67108864 + target;
+					}break;
+					case symbol_type::INSTR_INDEX:
 					case symbol_type::BASE:;
 					case symbol_type::HINT:;
 					}
@@ -637,6 +653,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			if (s2 == "immediate")				symbol_x_temp = symbol_type::IMMEDIATE;
 			else if (s2 == "SA")				symbol_x_temp = symbol_type::SA;
 			else if (s2 == "offset")			symbol_x_temp = symbol_type::OFFSET;
+			else if (s2 == "target")			symbol_x_temp = symbol_type::TARGET;
 			else if (s2 == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
 			else if (s2 == "base")				symbol_x_temp = symbol_type::BASE;
 			else if (s2 == "hint")				symbol_x_temp = symbol_type::HINT;
@@ -664,7 +681,8 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 				case symbol_type::IMMEDIATE:	bin_temp.immediate = bin_output.immediate;	bit_count += 16;	break;
 				case symbol_type::SA:			bin_temp.sa = bin_output.sa;				bit_count += 5;		break;
 				case symbol_type::OFFSET:		bin_temp.offset = bin_output.offset;		bit_count += 16;	break;
-				case symbol_type::INSTR_INDEX:
+				case symbol_type::TARGET:		
+				case symbol_type::INSTR_INDEX:	bin_temp.target = bin_output.target;		bit_count += 26;	break;
 				case symbol_type::BASE:
 				case symbol_type::HINT:
 				default:break;
