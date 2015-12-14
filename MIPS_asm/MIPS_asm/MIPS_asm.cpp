@@ -47,7 +47,7 @@ string work_path;
 char buf[1000];
 
 
-enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL, STATEMENT};
+enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, X_OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL, STATEMENT};
 
 /* 符号表 */
 /* 符号表采用动态向量方式存储 */
@@ -552,6 +552,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			if (s2 == "immediate")				symbol_x_temp = symbol_type::IMMEDIATE;
 			else if (s2 == "SA")				symbol_x_temp = symbol_type::SA;
 			else if (s2 == "offset")			symbol_x_temp = symbol_type::OFFSET;
+			else if (s2 == "x_offset")			symbol_x_temp = symbol_type::X_OFFSET;
 			else if (s2 == "target")			symbol_x_temp = symbol_type::TARGET;
 			else if (s2 == "instr_index")		symbol_x_temp = symbol_type::INSTR_INDEX;
 			else if (s2 == "base")				symbol_x_temp = symbol_type::BASE;
@@ -588,6 +589,22 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 					//转换为对应补码的16位二进制
 					bin_output.offset = 65536 + offset;
 				}break;
+				case symbol_type::X_OFFSET:
+				{
+					//相对于寄存器偏移
+					offset = value_temp;
+					offset /= 4;
+
+					if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
+					{
+						//错误代码3、偏移量溢出
+						error_code = 3;
+						return false;
+					}
+
+					//转换为对应补码的16位二进制
+					bin_output.offset = 65536 + offset;
+				}break;
 				case symbol_type::TARGET:
 				{
 					//26位偏移量,在当前指令附近的256MB的范围内跳转
@@ -608,7 +625,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 					bin_output.target = 67108864 + target;
 				}break;
 				case symbol_type::INSTR_INDEX:break;
-				case symbol_type::BASE:break;
+				case symbol_type::BASE:				bin_output.base = value_temp;		break;
 				case symbol_type::HINT:break;
 				case symbol_type::RS:				bin_output.rs = value_temp;			break;
 				case symbol_type::RT:				bin_output.rt = value_temp;			break;
@@ -673,10 +690,10 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 				case symbol_type::IMMEDIATE:	bin_temp.immediate = bin_output.immediate;	bit_count += 16;	break;
 				case symbol_type::SA:			bin_temp.sa = bin_output.sa;				bit_count += 5;		break;
 				case symbol_type::OFFSET:		bin_temp.offset = bin_output.offset;		bit_count += 16;	break;
-				case symbol_type::TARGET:		
+				case symbol_type::TARGET:break;
 				case symbol_type::INSTR_INDEX:	bin_temp.target = bin_output.target;		bit_count += 26;	break;
-				case symbol_type::BASE:
-				case symbol_type::HINT:
+				case symbol_type::BASE:			bin_temp.base = bin_output.base;			bit_count += 5;		break;
+				case symbol_type::HINT:break;
 				default:break;
 				}
 			}
