@@ -8,6 +8,8 @@
 每条指令可以有多种定义，例如跳转地址可以写立即数或是使用标号
 每项定义中包含三项数据，分别是指令名称、指令汇编输入格式、指令机器码输出格式
 
+符号
+	@			分隔符，相当于‘，’
 
 输入类型
 	OP			操作码，每条指令开头都代表操作码
@@ -30,7 +32,8 @@
 	SA          5位移位操作位数
 	immediate	16位立即数
 	target		26位立即数
-	offset      16位带符号偏移
+	offset      16位带符号，相对于当前PC或其它指定的基址偏移
+	x_offset	16位带符号，相对于基址偏移
 	instr_index 26位带符号偏移
 	base		5位寄存器号，用作基址
 	hint		
@@ -47,3 +50,4 @@
 #ADD{     {ADD RD,RS,RT};             {#000000    RS        RT        RD #00000 #100000}    }
 #ADDI{    {ADDI RT,RS,immediate};     {#001000    RS        RT        immediate}            }
 #B{       {B tab};                    {#000100    #00000    #00000    tab(16)}              }
+#LW{      {LW RT,offset@base};       {#100011    base      RT        offset}                            }

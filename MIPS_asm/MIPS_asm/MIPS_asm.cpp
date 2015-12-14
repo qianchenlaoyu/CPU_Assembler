@@ -147,16 +147,18 @@ union bin_str{
 vector<bin_str> middle_result;
 
 
+regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");									//匹配注释
+regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");						//匹配定义
+regex r_label("^([a-zA-Z]\\w*):$");												//匹配标签
+regex r_null_line("^\\s*$");													//匹配空行
 
+regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$");							//匹配指令定义
+regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$");			//匹配语句输入
+regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
 
-regex r_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
-regex reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$");
-regex r_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
-regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");
-regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");
-regex r_label("^([a-zA-Z]\\w*):$");
+regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$");							//匹配寄存器
+regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)");		//匹配表达式中的符号
 
-regex r_null_line("^\\s*$");
 
 /* 输出结果 */
 /* 输出到源文件同目录下 */
@@ -202,8 +204,7 @@ bool instruction_compile(void)
 	instruction_file_stream.close();
 	instruction_file_stream.open(instruction_path);
 
-	regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$");
-	regex r_source_input("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:,(\\w+))?)?$");
+
 	smatch result;
 	string ins_str;
 	string str_temp;
@@ -231,7 +232,7 @@ bool instruction_compile(void)
 
 			//进一步对源输入格式串进行匹配
 			ins_str = result.str(1);
-			if (regex_match(ins_str, result, r_source_input))
+			if (regex_match(ins_str, result, r_instruction_source))
 			{
 				str_temp = "(?:^\\s+\\b";
 				str_temp += "(" + result[1].str() + ")";	//第一组，指令码
@@ -249,7 +250,7 @@ bool instruction_compile(void)
 
 					if (result[4].matched)
 					{
-						str_temp += "(?:\\s*,\\s*([^,]+?))?";			//第四组
+						str_temp += "(?:\\s*(?:(?:,)|(?:@))\\s*([^,]+?))?";			//第四组
 					}
 
 					str_temp += ")?";
@@ -358,9 +359,6 @@ bool output_to_file(void)
 
 
 
-regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)");
-
-
 
 /*
 	表达式求值
@@ -376,6 +374,7 @@ bool evaluation(string &exp, char32_t &value)
 	string s1, s2, s3;
 	string postexp;
 	stringstream s_stream;
+	smatch result;
 
 	double value_temp;
 	int replace_count;
@@ -391,28 +390,39 @@ bool evaluation(string &exp, char32_t &value)
 		{
 			if ((*it)[1].matched)
 			{
+				//扫描到一个符号
 				scan_count++;
 				s1 = it->str(1);
 
-				for (auto index = symbol_tab.begin(); index != symbol_tab.end(); index++)
+				//判断是否为寄存器
+				if (regex_match(s1, result, r_reg_format))
 				{
-					if (s1 == index->name)
+					//是寄存器,以寄存器号号替换
+					s1 = result.str(1);
+					replace_count++;
+				}
+				else
+				{
+					for (auto index = symbol_tab.begin(); index != symbol_tab.end(); index++)
 					{
-						if (index->symbol_x == symbol_type::DEFINE)
+						if (s1 == index->name)
 						{
-							//宏定义，文本替换
-							s1 = index->symbol_string;
-							replace_count++;
-							break;
-						}
-						else if (index->symbol_x == symbol_type::LABEL)
-						{
-							//标签，数值转文本再替换
-							s_stream.clear();
-							s_stream << index->value;
-							s_stream >> s1;
-							replace_count++;
-							break;
+							if (index->symbol_x == symbol_type::DEFINE)
+							{
+								//宏定义，文本替换
+								s1 = index->symbol_string;
+								replace_count++;
+								break;
+							}
+							else if (index->symbol_x == symbol_type::LABEL)
+							{
+								//标签，数值转文本再替换
+								s_stream.clear();
+								s_stream << index->value;
+								s_stream >> s1;
+								replace_count++;
+								break;
+							}
 						}
 					}
 				}
@@ -530,7 +540,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	}
 	
 	regex_match(source_string, result_source_string,ins_index->r);
-	regex_match(ins_index->source_format, result_source_format, r_source);
+	regex_match(ins_index->source_format, result_source_format, r_instruction_source);
 
 	//对输入的每个符号进行分析，转化为数值
 	for (i = 2; i < 5; i++)
@@ -552,14 +562,14 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 
 			//判断是否为寄存器
 			s1 = result_source_string[i].str();
-			if (regex_match(s1, result_reg, reg_format))
+			if (regex_match(s1, result_reg, r_reg_format))
 			{
 				//是寄存器，进一步判断合理性
 				if (symbol_x_temp == symbol_type::RS || symbol_x_temp == symbol_type::RT || symbol_x_temp == symbol_type::RD)
 				{
 					//合理寄存器编号使用，转化为寄存器编号
 					s_stream.clear();
-					s_stream << result_reg[1].str();;
+					s_stream << result_reg[1].str();
 					s_stream >> j;
 
 					switch (symbol_x_temp)
@@ -648,7 +658,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 
 	//解算完成
 	//依据输出格式，按位填充
-	regex_match(ins_index->output_format, result_output_format, r_output);
+	regex_match(ins_index->output_format, result_output_format, r_instruction_output);
 
 	bit_count = 0;
 	bin_temp.bin = 0;
