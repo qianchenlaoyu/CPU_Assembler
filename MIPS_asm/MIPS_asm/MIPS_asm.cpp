@@ -28,6 +28,8 @@
 #include <Windows.h>
 #include <regex>
 #include <sstream>
+#include <iomanip>
+
 #include "expression.h"
 
 using namespace std;
@@ -108,43 +110,56 @@ bool symbol_add(symbol_str &ss)
 /* 动态向量方式存储 */
 /* 内容包括二进制和符号 */
 /* 使用结构体位域,直接合成32位宽的2进制数 */
-union bin_str{
-	struct{
-		volatile char32_t func : 6;
-		volatile char32_t sa : 5;
-		volatile char32_t rd : 5;
-		volatile char32_t rt : 5;
-		volatile char32_t rs : 5;
-		volatile char32_t op : 6;
-	};
+struct middle_result_str{
+	int line;
+	string source_string;
+	int address;
+	union{
+		struct{
+			volatile char32_t func : 6;
+			volatile char32_t sa : 5;
+			volatile char32_t rd : 5;
+			volatile char32_t rt : 5;
+			volatile char32_t rs : 5;
+			volatile char32_t op : 6;
+		};
 
-	struct{
-		volatile char32_t immediate : 16;
-		volatile char32_t : 16;
-	};
+		struct{
+			volatile char32_t immediate : 16;
+			volatile char32_t : 16;
+		};
 
-	struct{
-		volatile char32_t target : 26;
-		volatile char32_t : 6;
-	};
+		struct{
+			volatile char32_t target : 26;
+			volatile char32_t : 6;
+		};
 
-	struct{
-		volatile char32_t instr_index : 26;
-		volatile char32_t : 6;
-	};
+		struct{
+			volatile char32_t instr_index : 26;
+			volatile char32_t : 6;
+		};
 
-	struct{
-		volatile char32_t offset : 16;
-		volatile char32_t : 5;
-		volatile char32_t base : 5;
-		volatile char32_t : 6;
-	};
+		struct{
+			volatile char32_t offset : 16;
+			volatile char32_t : 5;
+			volatile char32_t base : 5;
+			volatile char32_t : 6;
+		};
 
-	volatile char32_t bin;
+		volatile char32_t bin;
+	}bin_str;
+};
+
+struct middle_compile_information_str{
+	int line;
+	string source_string;
+	int address;
+	int bin_mask;
 };
 
 
-vector<bin_str> middle_result;
+vector<middle_result_str> middle_result;
+vector<middle_compile_information_str> middle_compile_information;
 
 
 regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");									//匹配注释
@@ -283,31 +298,55 @@ bool instruction_compile(void)
 
 
 
-/*
-	输出到文件
-*/
-bool output_to_file(void)
+//将char32_t转化为二进制表式的字符串
+void convert_char32_t_string(string &s, char32_t d32, int mode)
 {
-	ofstream output_file_stream;
-	string output_file_path;
-	string str_temp;
-	char32_t temp;
 	int j;
 
-	output_file_path = work_path + "\\output.txt";
-	
-	output_file_stream.open(output_file_path);
+	s.clear();
 
-	if (output_file_stream)
+	for (j = 0; j < 32; j++)
 	{
+		if (d32 & 0x80000000)
+		{
+			s += "1";
+		}
+		else
+		{
+			s += "0";
+		}
 
+		d32 <<= 1;
+
+		if (mode)
+		{
+			if (j == 5)
+				s += "  ";
+			if (j == 10)
+				s += "  ";
+			if (j == 15)
+				s += "  ";
+			if (j == 20)
+				s += "  ";
+		}
 
 	}
-	else
-	{
-		cout << "创建文件失败" << endl;
+}
+
+
+/*
+	输出到文件
+	path 输出路径
+*/
+bool output_bin_file(string path)
+{
+	ofstream output_file_stream;
+	string str_temp;
+
+	output_file_stream.open(path);
+
+	if (!output_file_stream)
 		return false;
-	}
 
 	//输出文件头
 	output_file_stream << "memory_initialization_radix=2;" << endl;
@@ -317,31 +356,7 @@ bool output_to_file(void)
 	//循环输出二进制数
 	for (auto i = middle_result.begin(); i != middle_result.end(); )
 	{
-		temp = i->bin;
-		str_temp = "";
-
-		for (j = 0; j < 32; j++)
-		{
-			if (temp & 0x80000000)
-			{
-				str_temp += "1";
-			}
-			else
-			{
-				str_temp += "0";
-			}
-
-			temp <<= 1;
-
-			if (j == 5)
-				str_temp += "    ";
-			if (j == 10)
-				str_temp += "    ";
-			if (j == 15)
-				str_temp += "    ";
-			if (j == 20)
-				str_temp += "    ";
-		}
+		convert_char32_t_string(str_temp, i->bin_str.bin, 0);
 
 		i++;
 		if (i != middle_result.end())
@@ -350,15 +365,55 @@ bool output_to_file(void)
 			output_file_stream << str_temp << ";" << endl;
 	}
 
-
 	//关闭文件
 	output_file_stream.close();
-
 	return true;
 }
 
 
+/*
+	输出汇编信息	
+*/
+bool output_compile_information_file(string path)
+{
+	ofstream output_file_stream;
+	string str_temp;
+	ostringstream os_stream;
 
+	output_file_stream.open(path);
+
+	if (!output_file_stream)
+		return false;
+
+	auto middle_result_index = middle_result.begin();
+
+	//循环输出
+	for (auto i = middle_compile_information.begin(); i != middle_compile_information.end(); i++)
+	{
+		os_stream.str("");
+
+		if (i->bin_mask)
+		{
+			convert_char32_t_string(str_temp,middle_result_index->bin_str.bin, 1);
+			os_stream << setw(45) << setiosflags(ios_base::left) << str_temp << resetiosflags(ios_base::left);
+			os_stream << setw(8) << hex << i->address;
+			middle_result_index++;
+		}
+		else
+		{
+			str_temp.clear();
+			os_stream << setw(45) << str_temp << setw(8) << str_temp;
+		}
+
+		output_file_stream << os_stream.str()
+						<< setw(6) << i->line << setw(4) << "" << i->source_string << endl;
+	}
+
+
+	//关闭文件
+	output_file_stream.close();
+	return true;
+}
 
 /*
 	表达式求值
@@ -521,7 +576,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	symbol_type symbol_x_temp;
 	stringstream s_stream;
 	char32_t value_temp;
-	bin_str bin_temp;
+	middle_result_str middle_result_temp;
 
 	string s1, s2;
 	int bit_count;
@@ -535,7 +590,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	//添加一条指令的空间
 	if (position == -1)
 	{
-		middle_result.push_back(bin_temp);
+		middle_result.push_back(middle_result_temp);
 		position = middle_result.size() - 1;
 	}
 	
@@ -651,7 +706,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	regex_match(ins_index->output_format, result_output_format, r_instruction_output);
 
 	bit_count = 0;
-	bin_temp.bin = 0;
+	middle_result_temp.bin_str.bin = 0;
 
 	for (i = 1; i < 7; i++)
 	{
@@ -678,21 +733,21 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 				value_temp = binary_to_uint(result_output_format[i].str(), bits);
 				bit_count += bits;
 
-				bin_temp.bin |= value_temp << (32 - bit_count);
+				middle_result_temp.bin_str.bin |= value_temp << (32 - bit_count);
 			}
 			else
 			{
 				switch (symbol_x_temp)
 				{
-				case symbol_type::RS:			bin_temp.rs = bin_output.rs;				bit_count += 5;		break;
-				case symbol_type::RT:			bin_temp.rt = bin_output.rt;				bit_count += 5;		break;
-				case symbol_type::RD:			bin_temp.rd = bin_output.rd;				bit_count += 5;		break;
-				case symbol_type::IMMEDIATE:	bin_temp.immediate = bin_output.immediate;	bit_count += 16;	break;
-				case symbol_type::SA:			bin_temp.sa = bin_output.sa;				bit_count += 5;		break;
-				case symbol_type::OFFSET:		bin_temp.offset = bin_output.offset;		bit_count += 16;	break;
+				case symbol_type::RS:			middle_result_temp.bin_str.rs = bin_output.rs;					bit_count += 5;		break;
+				case symbol_type::RT:			middle_result_temp.bin_str.rt = bin_output.rt;					bit_count += 5;		break;
+				case symbol_type::RD:			middle_result_temp.bin_str.rd = bin_output.rd;					bit_count += 5;		break;
+				case symbol_type::IMMEDIATE:	middle_result_temp.bin_str.immediate = bin_output.immediate;	bit_count += 16;	break;
+				case symbol_type::SA:			middle_result_temp.bin_str.sa = bin_output.sa;					bit_count += 5;		break;
+				case symbol_type::OFFSET:		middle_result_temp.bin_str.offset = bin_output.offset;			bit_count += 16;	break;
 				case symbol_type::TARGET:break;
-				case symbol_type::INSTR_INDEX:	bin_temp.target = bin_output.target;		bit_count += 26;	break;
-				case symbol_type::BASE:			bin_temp.base = bin_output.base;			bit_count += 5;		break;
+				case symbol_type::INSTR_INDEX:	middle_result_temp.bin_str.target = bin_output.target;			bit_count += 26;	break;
+				case symbol_type::BASE:			middle_result_temp.bin_str.base = bin_output.base;				bit_count += 5;		break;
 				case symbol_type::HINT:break;
 				default:break;
 				}
@@ -714,7 +769,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	}
 
 	//存入结果
-	middle_result[position] = bin_temp;
+	middle_result[position] = middle_result_temp;
 
 	return true;
 }
@@ -738,6 +793,7 @@ bool assembly_execute(void)
 
 	unknown_symbol_str unknown_symbol_temp;
 	symbol_str	symbol_temp;
+	middle_compile_information_str middle_compile_information_temp;
 
 	auto ins_index = ins.begin();
 
@@ -763,6 +819,11 @@ bool assembly_execute(void)
 	while (source_file_stream.getline(buf,500))
 	{
 		s1 = buf;
+
+		//记录汇编信息
+		middle_compile_information_temp.line = line;
+		middle_compile_information_temp.source_string = s1;
+		middle_compile_information_temp.bin_mask = 0;
 
 		//去除单行注释
 		source_one_line = regex_replace(s1, r_comment, "$1");
@@ -822,6 +883,8 @@ bool assembly_execute(void)
 						unknown_symbol_tab.push_back(unknown_symbol_temp);
 					}
 
+					middle_compile_information_temp.bin_mask = 1;
+					middle_compile_information_temp.address = middle_result.size() - 1;
 					//区配到一条语句，并完成处理，结束循环
 					break;
 				}
@@ -841,6 +904,9 @@ bool assembly_execute(void)
 	
 		//行号计数
 		line++;
+
+		//存储汇编信息
+		middle_compile_information.push_back(middle_compile_information_temp);
 	}
 
 
@@ -877,10 +943,20 @@ bool assembly_execute(void)
 	if (error_information.empty())
 	{
 		//得到完全的二进制数，输出到文件
-		if (output_to_file())
+		//得到完全的二进制数，输出到文件
+		if (output_bin_file(work_path + "\\output.txt"))
 		{
 			cout << "输出文件成功" << endl;
-			return true;
+		}
+		else
+		{
+			cout << "输出文件失败" << endl;
+			return false;
+		}
+
+		if (output_compile_information_file(work_path + "\\x_output.txt"))
+		{
+			cout << "输出编译信息成功" << endl;
 		}
 		else
 		{
@@ -890,6 +966,8 @@ bool assembly_execute(void)
 	}
 	else
 		return false;
+
+	return true;
 }
 
 
