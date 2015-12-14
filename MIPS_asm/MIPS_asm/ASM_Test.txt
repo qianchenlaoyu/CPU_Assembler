@@ -1,86 +1,104 @@
 //本文件用于测试编译过程
 
-#define P0 0xf0
-#define P1 0xf1
-#define P2 0xf2
+	//允许空行
+	//语句开头必须有空位
 
 
-//org 0000
+	#define P0 0xf0				//支持宏定义
+	#define P1 0xf1				//支持单行注释
+	#define P2 0xf2
+	#define xx (365*(24*60))	
+	#define yy xx/365			//定义支持嵌套
 
-start:
-  ADD R0,R1,R2
-  ADDI R0,R1,1000
-  ADDIU R0,R1,2000
-  ADDU R0,R2,R4
 
-  //CLO
-  //CLZ
+start:							//支持标签，标签必须在行首
+	ADD R0,R1,R2
+	ADDI R0,R1,0xa4				//支持十六进制表示
+	ADDIU R0,R1,0x01<<10		//移位运算支持
+	ADDU R0,R2,R4
+	ADDI R0,R1,xx				//引用定义
+	ADDI R0,R1,yy				//引用嵌套的定义
 
-  DIV R0,R22
-  DIVU R12,8
-  MADD R23,R29
-  MADDU R27,R17
-  MSUB R14,R25
-  MSUBU R1,R2
-  //MUL R2,R3,R4
-  MULT R0,R21
-  MULTU R0,R2
+	//CLO						//部份指令没有被支持
+	//CLZ
 
-  SLT R1,R2,R3
-  SLTI R1,R2,R3
-  SLTIU R1,R11,200
+	DIV R0,R22
+	DIVU R12,R8					//不区分寄存器名和常量数值
+	DIVU R12,8					//得到的二进制编码一样
+	MADD R23,R29
+	MADDU R27,R17
+	MSUB R14,R25
+	MSUBU R1,R2
+	//MUL R2,R3,R4
+	MULT R0,R21
+	MULTU R0,R2
 
-  SLTU R21,R31,R10
-  SUB R2,R3,R7
-  SUBU R2,R3,R7
-  AND R2,R3,R7
-  ANDI R2,R3,102
+	SLT R1,R2,R3
+	SLTI R1,R2,R3
+	SLTIU R1,R11,365*(24*60)	//支持简单的常量表达式
+								//满足大部份需求
+								//但是汇编器不会提示溢出情况
 
-  LUI R2,222
-  NOR R2,R3,R7
-  OR R2,R3,R7
-  ORI R2,R8,123
-  XOR R2,R3,R7
-  XORI R2,R22,22
-  
-  SLL R2,R8,2
-  SLLV R2,R3,R7
-  SRA R3,R31,R2
-  SRAV R2,R3,1
-  SRL R2,R3,R7
-  SRLV R2,R13,2
+	SLTU R21,R31,R10
+	SUB R2,R3,R7
+	SUBU R2,R3,R7
+	AND R2,R3,R7
+	ANDI R2,R3,102
+
+	LUI R2,222
+	NOR R2,R3,R7
+	OR R2,R3,R7
+	ORI R2,R8,123
+	XOR R2,R3,R7
+	XORI R2,R22,22
+	
+	SLL R2,R8,2
+	SLLV R2,R3,R7
+	SRA R3,R31,R2
+	SRAV R2,R3,1
+	SRL R2,R3,R7
+	SRLV R2,R13,2
+
+	//DS 100					//保留一片区域，以字节为单位
+								//下一次存储指令时,如果没有字对齐
+								//汇编器将隐式补充以对齐
+	//DB 0x00,0x02,100			//初始化存储器，以字节为单位
+	//DW 0x12345678,29000		//初始化存储器，以字为单位
 
 T1: 
-  B T1
-  B 3943
-  BAL R1,T1
-  BAL R1,3242
-  BEQ R2,R3,T1
-  BEQ R2,R23,2343
-  BGEZ R1,T1
-  BGEZAL R2,T1
-  BGTZ R3,T1
-  BLEZ R28,T1
-  BLTZ R24,T1
-  BLTZAL R28,T1
-  BNE R2,R3,T1
+	B T1
+	B T2						//支持前向引用
+	B 3943						//不区分标签与常量数值
+	BAL R1,T1
+	BAL R1,3242
+	BEQ R2,R3,T1
+	BEQ R2,R23,2343
+	BGEZ R1,T1
+	BGEZAL R2,T1
+	BGTZ R3,T1
+	BLEZ R28,T1
+	BLTZ R24,T1
+	BLTZAL R28,T1
+	BNE R2,R3,T1
 
-T2: 
-  J T2
-  J 2342
-  JAL T2
-  //JALR R2,R3
-  //JR R4
+T2:								//标签，定义都不能重名
+	J T2						
+	J 2342
+	JAL T2
+	//JALR R2,R3
+	//JR R4
 
-  NOP
-  SSNOP
+	NOP
+	SSNOP
 
-  LW R2,10@R4
-  SW R2,10@R5
+	LW R2,10@R4					//寄存器相对寻址
+	SW R2,10@R5
 
-  MFHI R23
-  MFLO R23
-  MOVN R11,R12,R13
-  MOVZ R11,R12,R13
-  MTHI R14
-  MTLO R15
+	MFHI R23
+	MFLO R23
+	MOVN R11,R12,R13
+	MOVZ R11,R12,R13
+	MTHI R14
+	MTLO R15
+
+
