@@ -29,6 +29,7 @@
 #include <regex>
 #include <sstream>
 #include <iomanip>
+#include <math.h>
 
 #include "expression.h"
 
@@ -162,10 +163,14 @@ vector<middle_result_str> middle_result;
 vector<middle_compile_information_str> middle_compile_information;
 
 
+regex r_null_line("^\\s*$");													//匹配空行
 regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");									//匹配注释
 regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");						//匹配定义
 regex r_label("^([a-zA-Z]\\w*):$");												//匹配标签
-regex r_null_line("^\\s*$");													//匹配空行
+regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$");					//匹配伪指令
+regex r_pseudoinstruction_db("^\\s+DB\\s+(.+?)\\s*$");
+regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$");
+regex r_scan_exp("(?:,?\\s*)([^,\\t\\n]+)\\s*");								//搜索常量表达式
 
 regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$");							//匹配指令定义
 regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$");			//匹配语句输入
@@ -766,10 +771,36 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 
 
 
+//添加错误记录
+void add_error_information(int line, int error_code, string &s)
+{
+	stringstream s_stream;
+	string s_temp;
+	s_stream.clear();
+	s_stream << line;
+	s_stream >> s_temp;
+	s_temp = "error: line " + s_temp + "     ";
+
+	switch (error_code)
+	{
+	case 1:		s_temp += "用法错误";				break;
+	case 2:		s_temp += "无法解算";				break;
+	case 3:		s_temp += "偏移量溢出 ";			break;
+	case 4:		s_temp += "指令未支持或不完整 ";	break;
+	case 5:		s_temp += "符号名重复";				break;
+	}
+
+	s_temp += s;
+	error_information.push_back(s_temp);
+}
+
+
+
 bool assembly_execute(void)
 {
 	int line;
 	int error_code;
+	char32_t value_temp;
 
 	string s1,s2;
 	string source_one_line;
@@ -834,7 +865,7 @@ bool assembly_execute(void)
 			{
 				//符号名重复
 				s2 = "符号名重复：" + symbol_temp.name;
-				error_information.push_back(s2);
+				add_error_information(line, 5, s2);
 			}
 		}
 		else if (regex_match(source_one_line, result_label, r_label))
@@ -848,8 +879,43 @@ bool assembly_execute(void)
 			{
 				//符号名重复
 				s2 = "符号名重复：" + symbol_temp.name;
-				error_information.push_back(s2);
+				add_error_information(line, 5, s2);
 			}
+		}
+		else if (regex_match(source_one_line, result, r_pseudoinstruction_ds))
+		{
+			//保留一片存储区域
+			if (evaluation(result.str(1), value_temp))
+			{
+				middle_result_temp.bin_str.bin = 0;
+				value_temp = ceil(value_temp/4.0);			//正向取整，作字对齐
+				
+				while (value_temp--)
+				{
+					middle_result.push_back(middle_result_temp);
+					address_count += 4;						//地址计数
+				}
+			}
+			else
+			{
+				//记入错误
+				add_error_information(line, 0, s1);
+			}
+
+		}
+		else if (regex_match(source_one_line, result, r_pseudoinstruction_db))
+		{
+			//以字节为单位初始化存储器
+
+			
+
+
+		}
+		else if (regex_match(source_one_line, result, r_pseudoinstruction_dw))
+		{
+			//以字为单位初始化存储器
+
+
 		}
 		else
 		{
@@ -891,12 +957,7 @@ bool assembly_execute(void)
 			//错误处理
 			if (ins_index == ins.end())
 			{
-				s_stream.clear();
-				s_stream << line;
-				s_stream >> s2;
-
-				s2 = "error: line " + s2 + "    " + s1;
-				error_information.push_back(s2);
+				add_error_information(line, 0, s1);
 			}
 		}
 	
@@ -907,7 +968,8 @@ bool assembly_execute(void)
 		middle_compile_information.push_back(middle_compile_information_temp);
 	}
 
-
+	//关闭文件
+	source_file_stream.close();
 
 	//进行第二次扫描，替换前向引用符号
 	for (auto i = unknown_symbol_tab.begin(); i != unknown_symbol_tab.end(); i++)
@@ -919,21 +981,7 @@ bool assembly_execute(void)
 		else
 		{
 			//第二次仍无法解算，计入错误
-			s_stream.clear();
-			s_stream << i->line;
-			s_stream >> s2;
-			s2 = "error: line " + s2;
-
-			switch (error_code)
-			{
-			case 1:		s2 += "用法错误";				break;
-			case 2:		s2 += "无法解算";				break;
-			case 3:		s2 += "偏移量溢出 ";			break;
-			case 4:		s2 += "指令未支持或不完整 ";	break;
-			}
-
-			s2 += i->name;
-			error_information.push_back(s2);
+			add_error_information(line, error_code, i->name);
 		}
 	}
 
