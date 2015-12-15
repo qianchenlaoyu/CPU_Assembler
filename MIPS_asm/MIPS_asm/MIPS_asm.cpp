@@ -800,6 +800,8 @@ bool assembly_execute(void)
 {
 	int line;
 	int error_code;
+	int i;
+
 	char32_t value_temp;
 
 	string s1,s2;
@@ -888,12 +890,12 @@ bool assembly_execute(void)
 			if (evaluation(result.str(1), value_temp))
 			{
 				middle_result_temp.bin_str.bin = 0;
-				value_temp = ceil(value_temp/4.0);			//正向取整，作字对齐
+				value_temp = (char32_t)ceil(value_temp/4.0);			//正向取整，作字对齐
 				
 				while (value_temp--)
 				{
 					middle_result.push_back(middle_result_temp);
-					address_count += 4;						//地址计数
+					address_count += 4;									//地址计数
 				}
 			}
 			else
@@ -901,19 +903,59 @@ bool assembly_execute(void)
 				//记入错误
 				add_error_information(line, 0, s1);
 			}
-
 		}
 		else if (regex_match(source_one_line, result, r_pseudoinstruction_db))
 		{
 			//以字节为单位初始化存储器
+			s2 = result.str(1);
+			i = 0;
 
+			for (sregex_iterator it(s2.begin(), s2.end(), r_scan_exp), end_it; it != end_it; it++)
+			{
+				if (evaluation((*it).str(1), value_temp))
+				{
+					middle_result_temp.bin_str.arr[i++] = value_temp;
+					if (i == 4)
+					{
+						middle_result.push_back(middle_result_temp);
+						address_count += 4;
+						i = 0;
+					}
+				}
+				else
+				{
+					//错误
+					add_error_information(line, 0, s1);
+					break;
+				}
+			}
 			
-
-
+			//对齐
+			if (i != 0)
+			{
+				middle_result.push_back(middle_result_temp);
+				address_count += 4;
+			}
 		}
 		else if (regex_match(source_one_line, result, r_pseudoinstruction_dw))
 		{
 			//以字为单位初始化存储器
+			s2 = result.str(1);
+			for (sregex_iterator it(s2.begin(), s2.end(), r_scan_exp), end_it; it != end_it; it++)
+			{
+				if (evaluation((*it).str(1), value_temp))
+				{
+					middle_result_temp.bin_str.bin = value_temp;
+					middle_result.push_back(middle_result_temp);
+					address_count += 4;
+				}
+				else
+				{
+					//错误
+					add_error_information(line, 0, s1);
+					break;
+				}
+			}
 
 
 		}
