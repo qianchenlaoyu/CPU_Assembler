@@ -49,8 +49,8 @@
 //#JR{      {JR RS};                    {#000000    RS        #00000    #00000       hint      #001000}    }
 #NOP{     {NOP};                      {#000000    #00000    #00000    #00000       #00000    #000000}    }
 #SSNOP{   {SSNOP};                    {#000000    #00000    #00000    #00000       #00001    #000000}    }
-#LW{      {LW RT,offset@base};       {#100011    base      RT        offset}                            }
-#SW{      {SW RT,offset@base};       {#101011    base      RT        offset}                            }
+#LW{      {LW RT,x_offset@base};      {#100011    base      RT        offset}                            }
+#SW{      {SW RT,x_offset@base};      {#101011    base      RT        offset}                            }
 #MFHI{    {MFHI RD};                  {#000000    #00000    #00000    RD           #00000    #010000}    }
 #MFLO{    {MFLO RD};                  {#000000    #00000    #00000    RD           #00000    #010010}    }
 #MOVN{    {MOVN RD,RS,RT};            {#000000    RS        RT        RD           #00000    #001011}    }

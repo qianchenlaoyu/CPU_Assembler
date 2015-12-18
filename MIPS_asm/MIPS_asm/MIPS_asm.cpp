@@ -163,21 +163,22 @@ vector<middle_result_str> middle_result;
 vector<middle_compile_information_str> middle_compile_information;
 
 
-regex r_null_line("^\\s*$");													//匹配空行
-regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$");									//匹配注释
-regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$");						//匹配定义
-regex r_label("^([a-zA-Z]\\w*):$");												//匹配标签
-regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$");					//匹配伪指令
-regex r_pseudoinstruction_db("^\\s+DB\\s+(.+?)\\s*$");
-regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$");
-regex r_scan_exp("(?:,?\\s*)([^,\\t\\n]+)\\s*");								//搜索常量表达式
+regex r_null_line("^\\s*$", regex::optimize);													//匹配空行
+regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$", regex::optimize);									//匹配注释
+regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$", regex::optimize);					//匹配定义
+regex r_label("^([a-zA-Z]\\w*):$", regex::optimize);											//匹配标签
+regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$", regex::optimize);					//匹配伪指令
+regex r_pseudoinstruction_db("^\\s+DB\\s+((?:(?:(?:[^,\\\\\\t'\"]+)|(?:'(?:(?:\\\\\\S)|(?:[^\\\\']))')|(?:\"(?:(?:(?:\\\\\\S)|(?:(?:[^\\\\\"])))+?)\"))(?:(?:\\s*,\\s*)|(?:\\s*$)))+$)$", regex::optimize);
+regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$", regex::optimize);
+regex r_scan_exp("(?:([^,\\\\\\t'\"]+)|(?:'((?:\\\\\\S)|(?:[^\\\\']))')|(?:\"((?:(?:\\\\\\S)|(?:[^\\\\\"]))+)\"))(?:\\s*,\\s*)?", regex::optimize);	//搜索常量表达式、字符、字符串
+regex r_scan_one_ascii("(?:\\\\(\\S))|(.)",regex::optimize);
 
-regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$");							//匹配指令定义
-regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$");			//匹配语句输入
-regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$");
+regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$", regex::optimize);						//匹配指令定义
+regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$", regex::optimize);			//匹配语句输入
+regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$", regex::optimize);
 
-regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$");							//匹配寄存器
-regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)");		//匹配表达式中的符号
+regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$", regex::optimize);							//匹配寄存器
+regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)", regex::optimize);	//匹配表达式中的符号
 
 
 /* 输出结果 */
@@ -279,7 +280,7 @@ bool instruction_compile(void)
 				str_temp += "$)";
 
 				try{
-					ins_temp.r = str_temp;
+					ins_temp.r.assign(str_temp, regex::optimize);
 				}
 				catch (regex_error e){
 					cout << e.what() << "\ncode:" << e.code() << endl;
@@ -390,8 +391,6 @@ bool output_compile_information_file(string path)
 	if (!output_file_stream)
 		return false;
 
-	auto middle_result_index = middle_result.begin();
-
 	//循环输出
 	for (auto i = middle_compile_information.begin(); i != middle_compile_information.end(); i++)
 	{
@@ -399,10 +398,9 @@ bool output_compile_information_file(string path)
 
 		if (i->bin_mask)
 		{
-			convert_char32_t_string(str_temp,middle_result_index->bin_str.bin, 1);
+			convert_char32_t_string(str_temp,middle_result[i->address/4].bin_str.bin, 1);
 			os_stream << setw(45) << setiosflags(ios_base::left) << str_temp << resetiosflags(ios_base::left);
 			os_stream << setw(8) << hex << i->address;
-			middle_result_index++;
 		}
 		else
 		{
@@ -795,6 +793,26 @@ void add_error_information(int line, int error_code, string &s)
 }
 
 
+/*
+	处理转义字符
+*/
+bool conver_ascii(char &ch)
+{
+	switch (ch)
+	{
+	case 't':		ch = '\t';	break;
+	case 'n':		ch = '\n';	break;
+	case 'r':		ch = '\r';	break;
+	case '\\':		ch = '\\';	break;
+	case '\'':		ch = '\'';	break;
+	case '\"':		ch = '\"';	break;
+	default:return false;
+	}
+
+	return true;
+}
+
+
 
 bool assembly_execute(void)
 {
@@ -803,8 +821,8 @@ bool assembly_execute(void)
 	int i;
 
 	char32_t value_temp;
-
-	string s1,s2;
+	char ch;
+	string s1,s2,s3;
 	string source_one_line;
 	smatch result;
 	ifstream source_file_stream;
@@ -886,6 +904,9 @@ bool assembly_execute(void)
 		}
 		else if (regex_match(source_one_line, result, r_pseudoinstruction_ds))
 		{
+			middle_compile_information_temp.bin_mask = 1;
+			middle_compile_information_temp.address = address_count;
+
 			//保留一片存储区域
 			if (evaluation(result.str(1), value_temp))
 			{
@@ -906,32 +927,98 @@ bool assembly_execute(void)
 		}
 		else if (regex_match(source_one_line, result, r_pseudoinstruction_db))
 		{
+			middle_compile_information_temp.bin_mask = 1;
+			middle_compile_information_temp.address = address_count;
+
 			//以字节为单位初始化存储器
-			s2 = result.str(1);
-			i = 0;
+			s2 = result[1].str();
+			i = 4;
 
 			for (sregex_iterator it(s2.begin(), s2.end(), r_scan_exp), end_it; it != end_it; it++)
 			{
-				if (evaluation((*it).str(1), value_temp))
+				if ((*it)[1].matched)
 				{
-					middle_result_temp.bin_str.arr[i++] = value_temp;
-					if (i == 4)
+					if (evaluation((*it).str(1), value_temp))
 					{
-						middle_result.push_back(middle_result_temp);
-						address_count += 4;
-						i = 0;
+						middle_result_temp.bin_str.arr[--i] = value_temp;
+						if (i == 0)
+						{
+							middle_result.push_back(middle_result_temp);
+							address_count += 4;
+							i = 4;
+						}
+					}
+					else
+					{
+						//错误
+						add_error_information(line, 0, s1);
+						break;
 					}
 				}
-				else
+				else if ((*it)[2].matched)
 				{
-					//错误
-					add_error_information(line, 0, s1);
-					break;
+					s3 = (*it).str(2);
+					for (sregex_iterator ascii_it(s3.begin(), s3.end(), r_scan_one_ascii), ascii_end_it; ascii_it != ascii_end_it; ascii_it++)
+					{
+						if ((*ascii_it)[1].matched)
+						{
+							//转义符
+							ch = (*ascii_it)[1].str()[0];
+							if (!conver_ascii(ch))
+							{
+								//错误
+								add_error_information(line, 0, s1);
+								break;
+							}
+						}
+						else if ((*ascii_it)[2].matched)
+						{
+							ch = (*ascii_it)[2].str()[0];
+						}
+
+						middle_result_temp.bin_str.arr[--i] = ch;
+						if (i == 0)
+						{
+							middle_result.push_back(middle_result_temp);
+							address_count += 4;
+							i = 4;
+						}
+					}
+				}
+				else if ((*it)[3].matched)
+				{
+					s3 = (*it).str(3);
+					for (sregex_iterator ascii_it(s3.begin(), s3.end(), r_scan_one_ascii), ascii_end_it; ascii_it != ascii_end_it; ascii_it++)
+					{
+						if ((*ascii_it)[1].matched)
+						{
+							//转义符
+							ch = (*ascii_it)[1].str()[0];
+							if (!conver_ascii(ch))
+							{
+								//错误
+								add_error_information(line, 0, s1);
+								break;
+							}
+						}
+						else if ((*ascii_it)[2].matched)
+						{
+							ch = (*ascii_it)[2].str()[0];
+						}
+
+						middle_result_temp.bin_str.arr[--i] = ch;
+						if (i == 0)
+						{
+							middle_result.push_back(middle_result_temp);
+							address_count += 4;
+							i = 4;
+						}
+					}
 				}
 			}
 			
 			//对齐
-			if (i != 0)
+			if (i != 4)
 			{
 				middle_result.push_back(middle_result_temp);
 				address_count += 4;
@@ -939,22 +1026,30 @@ bool assembly_execute(void)
 		}
 		else if (regex_match(source_one_line, result, r_pseudoinstruction_dw))
 		{
+			middle_compile_information_temp.bin_mask = 1;
+			middle_compile_information_temp.address = address_count;
+
 			//以字为单位初始化存储器
 			s2 = result.str(1);
 			for (sregex_iterator it(s2.begin(), s2.end(), r_scan_exp), end_it; it != end_it; it++)
 			{
-				if (evaluation((*it).str(1), value_temp))
+				if ((*it)[1].matched)
 				{
-					middle_result_temp.bin_str.bin = value_temp;
-					middle_result.push_back(middle_result_temp);
-					address_count += 4;
+					if (evaluation((*it).str(1), value_temp))
+					{
+						middle_result_temp.bin_str.bin = value_temp;
+						middle_result.push_back(middle_result_temp);
+						address_count += 4;
+					}
+					else
+					{
+						//错误
+						add_error_information(line, 0, s1);
+						break;
+					}
 				}
-				else
-				{
-					//错误
-					add_error_information(line, 0, s1);
-					break;
-				}
+
+
 			}
 
 
