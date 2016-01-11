@@ -1,4 +1,4 @@
-
+ï»¿
 
 
 #include "stdafx.h"
@@ -15,6 +15,6 @@
 
 using namespace std;
 
-unsigned int binary_to_uint(string &s, int &bits);		//¶ş½øÖÆ´®×ª»»ÎªintĞÍÊıÖµ
-bool trans(string &exp, string &postexp);				//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
-bool compvalue(string &postexp, double &value);			//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
+unsigned int binary_to_uint(string &s, int &bits);		//äºŒè¿›åˆ¶ä¸²è½¬æ¢ä¸ºintå‹æ•°å€¼
+bool trans(string &exp, string &postexp);				//å°†ç®—æœ¯è¡¨è¾¾å¼expè½¬æ¢æˆåç¼€è¡¨è¾¾å¼postexp
+bool compvalue(string &postexp, double &value);			//è®¡ç®—åç¼€è¡¨è¾¾å¼postexpçš„å€¼

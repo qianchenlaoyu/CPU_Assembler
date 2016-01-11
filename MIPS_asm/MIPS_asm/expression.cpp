@@ -1,4 +1,18 @@
-
+ï»¿/** @file expression.cpp
+  * @brief å®ç°è¡¨è¾¾å¼æ±‚å€¼
+  *
+  *ç”¨æˆ·è¾“å…¥ä¸€ä¸ªåŒ…å«â€œ+â€ã€â€œ-â€ã€â€œ*â€ã€â€œ/â€ã€æ­£æ•´æ•°å’Œåœ†æ‹¬å·çš„åˆæ³•ç®—æœ¯è¡¨è¾¾å¼ï¼Œè®¡ç®—è¯¥è¡¨è¾¾å¼çš„è¿ç®—ç»“æœ
+  *
+  *å·²å®ç°\n
+  *1ã€å¤šå­—ç¬¦è¿ç®—ç¬¦æ”¯æŒ\n
+  *3ã€ä½è¿ç®—æ”¯æŒï¼Œâ€œ\<\<â€ã€â€œ\>\>â€ã€â€œ&â€ã€â€œ|â€ã€â€œ^â€ã€â€œ~â€\n
+  *6ã€åå…­è¿›åˆ¶æ”¯æŒï¼Œä»¥â€œ0xâ€å¼€å¤´è¡¨ç¤ºåå…­è¿›åˆ¶æ•°\n
+  *\n
+  *æœªå®ç°\n
+  *2ã€æ­£è´Ÿæ•°çš„ç›´æ¥è¡¨ç¤º\n
+  *4ã€æ”¯æŒå–æ¨¡è¿ç®—ï¼Œâ€œ%â€\n
+  *5ã€å­—ç¬¦è¾“å…¥ï¼Œä»¥å•å¼•å·åŒ…å›´çš„ä¸€ä¸ªå­—ç¬¦\n
+  */
 
 #include "stdafx.h"
 #include <string>
@@ -12,16 +26,30 @@
 #include <sstream>
 #include "expression.h"
 
-
-
-
 using namespace std;
+
+
+#define Maxop 13			///<è¿ç®—ç¬¦æ•°é‡
+#define MaxSize 50			///<è¿ç®—ç¬¦æ ˆçš„æœ€å¤§é•¿åº¦
+
+
+
+/** \brief è¿ç®—ç¬¦ä¼˜å…ˆçº§ç»“æ„ä½“*/
+struct pri_str{
+	string ch;
+	int pri;
+};
+
+
+pri_str lpri[] = { { "=", 0 }, { "+", 3 }, { "-", 3 }, { "*", 5 }, { "/", 5 }, { "(", 1 }, { ")", 12 }, { "<<", 10 }, { ">>", 10 }, { "&", 10 }, { "|", 10 }, { "^", 10 }, { "~", 11 } };
+pri_str rpri[] = { { "=", 0 }, { "+", 2 }, { "-", 2 }, { "*", 4 }, { "/", 4 }, { "(", 12 }, { ")", 1 }, { "<<", 6 }, { ">>", 6 }, { "&", 6 }, { "|", 6 }, { "^", 6 }, { "~", 11 } };
+
 
 
 
 /*
-½«¶ş½øÖÆ´®×ª»¯ÎªintĞÍ
-´ÓÍ·É¨Ãè£¬Óöµ½¡®#¡¯ÖØĞÂ¿ªÊ¼
+å°†äºŒè¿›åˆ¶ä¸²è½¬åŒ–ä¸ºintå‹
+ä»å¤´æ‰«æï¼Œé‡åˆ°â€˜#â€™é‡æ–°å¼€å§‹
 #000001 -> 1
 00001 -> 1
 */
@@ -56,47 +84,7 @@ unsigned int binary_to_uint(string &s, int &bits)
 }
 
 
-
-
-
-
-
-
-
-#define Maxop 13			//ÔËËã·ûÊıÁ¿
-#define MaxSize 50			//ÔËËã·ûÕ»µÄ×î´ó³¤¶È
-
-
-
-//ÓÃ»§ÊäÈëÒ»¸ö°üº¬¡°+¡±¡¢¡°-¡±¡¢¡°*¡±¡¢¡°/¡±¡¢ÕıÕûÊıºÍÔ²À¨ºÅµÄºÏ·¨ËãÊõ±í´ïÊ½£¬¼ÆËã¸Ã±í´ïÊ½µÄÔËËã½á¹û
-
-
-//1¡¢¶à×Ö·ûÔËËã·ûÖ§³Ö
-//3¡¢Î»ÔËËãÖ§³Ö£¬¡°<<¡±¡¢¡°>>¡±¡¢¡°&¡±¡¢¡°|¡±¡¢¡°^¡±¡¢¡°~¡±
-//6¡¢Ê®Áù½øÖÆÖ§³Ö£¬ÒÔ¡°0x¡±¿ªÍ·±íÊ¾Ê®Áù½øÖÆÊı
-
-
-//2¡¢Õı¸ºÊıµÄÖ±½Ó±íÊ¾
-//4¡¢Ö§³ÖÈ¡Ä£ÔËËã£¬¡°%¡±
-//5¡¢×Ö·ûÊäÈë£¬ÒÔµ¥ÒıºÅ°üÎ§µÄÒ»¸ö×Ö·û
-
-
-
-//ÔËËã·ûÓÅÏÈ¼¶²éÑ¯±í
-struct pri_str{
-	string ch;
-	int pri;
-};
-
-
-pri_str lpri[] = { { "=", 0 }, { "+", 3 }, { "-", 3 }, { "*", 5 }, { "/", 5 }, { "(", 1 }, { ")", 12 }, { "<<", 10 }, { ">>", 10 }, { "&", 10 }, { "|", 10 }, { "^", 10 }, { "~", 11 } };
-pri_str rpri[] = { { "=", 0 }, { "+", 2 }, { "-", 2 }, { "*", 4 }, { "/", 4 }, { "(", 12 }, { ")", 1 }, { "<<", 6 }, { ">>", 6 }, { "&", 6 }, { "|", 6 }, { "^", 6 }, { "~", 11 } };
-
-
-
-
-
-int leftpri(string &op)//Çó×óÔËËã·ûopµÄÓÅÏÈ¼¶
+int leftpri(string &op)//æ±‚å·¦è¿ç®—ç¬¦opçš„ä¼˜å…ˆçº§
 {
 	int i;
 	for (i = 0; i < Maxop; i++)
@@ -106,7 +94,7 @@ int leftpri(string &op)//Çó×óÔËËã·ûopµÄÓÅÏÈ¼¶
 }
 
 
-int rightpri(string &op)//ÇóÓÒÔËËã·ûopµÄÓÅÏÈ¼¶
+int rightpri(string &op)//æ±‚å³è¿ç®—ç¬¦opçš„ä¼˜å…ˆçº§
 {
 	int i;
 	for (i = 0; i < Maxop; i++)
@@ -117,7 +105,7 @@ int rightpri(string &op)//ÇóÓÒÔËËã·ûopµÄÓÅÏÈ¼¶
 
 
 
-bool Inop(string &ch)//ÅĞ¶ÏchÊÇ·ñÎªÔËËã·û,·µ»ØÂß¼­Öµ
+bool Inop(string &ch)//åˆ¤æ–­chæ˜¯å¦ä¸ºè¿ç®—ç¬¦,è¿”å›é€»è¾‘å€¼
 {
 	if (ch == "=" || ch == "+" || ch == "-" || ch == "*" || ch == "/"
 		|| ch == "(" || ch == ")" || ch == "<<" || ch == ">>" || ch == "&"
@@ -130,7 +118,7 @@ bool Inop(string &ch)//ÅĞ¶ÏchÊÇ·ñÎªÔËËã·û,·µ»ØÂß¼­Öµ
 
 
 
-int Precede(string &op1, string &op2)//op1ºÍo02ÔËËã·ûÓÅÏÈ¼¶µÄ±È½Ï½á¹û
+int Precede(string &op1, string &op2)//op1å’Œo02è¿ç®—ç¬¦ä¼˜å…ˆçº§çš„æ¯”è¾ƒç»“æœ
 {
 	if (leftpri(op1) == rightpri(op2))
 		return 0;
@@ -144,9 +132,9 @@ int Precede(string &op1, string &op2)//op1ºÍo02ÔËËã·ûÓÅÏÈ¼¶µÄ±È½Ï½á¹û
 
 
 
-bool trans(string &exp, string &postexp)//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
+bool trans(string &exp, string &postexp)//å°†ç®—æœ¯è¡¨è¾¾å¼expè½¬æ¢æˆåç¼€è¡¨è¾¾å¼postexp
 {
-	vector<string> stack;  //´æ·ÅÔËËã·û
+	vector<string> stack;  //å­˜æ”¾è¿ç®—ç¬¦
 	string s1;
 	char ch;
 
@@ -155,16 +143,16 @@ bool trans(string &exp, string &postexp)//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
 
 	int index = 0;
 
-	while (exp[index] != '\0')	//exp±í´ïÊ½Î´É¨ÃèÍêÊ±Ñ­»·
+	while (exp[index] != '\0')	//expè¡¨è¾¾å¼æœªæ‰«æå®Œæ—¶å¾ªç¯
 	{
 		if (exp[index] == ' ')
 		{
-			//ºöÂÔµô¿Õ¸ñ
+			//å¿½ç•¥æ‰ç©ºæ ¼
 			index++;
 		}
 		else if (exp[index] == '0' && (exp[index + 1] == 'x' || exp[index + 1] == 'X'))
 		{
-			//Ê®Áù½øÖÆÊı
+			//åå…­è¿›åˆ¶æ•°
 			postexp += exp[index++];
 			postexp += exp[index++];
 
@@ -176,17 +164,17 @@ bool trans(string &exp, string &postexp)//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
 			}
 			postexp += '#';
 		}
-		else if (exp[index] >= '0'&& exp[index] <= '9')		//ÎªÊı×Ö×Ö·ûµÄÇé¿ö
+		else if (exp[index] >= '0'&& exp[index] <= '9')		//ä¸ºæ•°å­—å­—ç¬¦çš„æƒ…å†µ
 		{
-			while (exp[index] >= '0' && exp[index] <= '9')//ÅĞ¶¨ÎªÊı×Ö
+			while (exp[index] >= '0' && exp[index] <= '9')//åˆ¤å®šä¸ºæ•°å­—
 			{
 				postexp += exp[index++];
 			}
-			postexp += '#';				//ÓÃ#±êÊ¶Ò»¸öÊıÖµ´®µÄ½áÊø
+			postexp += '#';				//ç”¨#æ ‡è¯†ä¸€ä¸ªæ•°å€¼ä¸²çš„ç»“æŸ
 		}
 		else
 		{
-			//ÌáÈ¡³öÔËËã·û
+			//æå–å‡ºè¿ç®—ç¬¦
 			s1.clear();
 			s1 += exp[index];
 			if (!Inop(s1))
@@ -194,25 +182,25 @@ bool trans(string &exp, string &postexp)//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
 				s1 += exp[index + 1];
 				if (!Inop(s1))
 				{
-					//Î´ÄÜ»ñÈ¡ÔËËã·û
+					//æœªèƒ½è·å–è¿ç®—ç¬¦
 					return false;
 				}
 			}
 
 
-			switch (Precede(stack.back(), s1))//ÎªÔËËã·ûµÄÇé¿ö
+			switch (Precede(stack.back(), s1))//ä¸ºè¿ç®—ç¬¦çš„æƒ…å†µ
 			{
-			case -1://Èç¹ûÓÅÏÈ¼¶¸ßÓÚÇ°Ò»¸öÔËËã·û£¬½«ÔËËã·ûÈëÕ»
+			case -1://å¦‚æœä¼˜å…ˆçº§é«˜äºå‰ä¸€ä¸ªè¿ç®—ç¬¦ï¼Œå°†è¿ç®—ç¬¦å…¥æ ˆ
 				stack.push_back(s1);
 				index += s1.size();
 				break;
 
-			case 0://ÏàµÈµÄÔËËã·û£¬ÏûÈ¥ÔËËã·û
+			case 0://ç›¸ç­‰çš„è¿ç®—ç¬¦ï¼Œæ¶ˆå»è¿ç®—ç¬¦
 				stack.pop_back();
 				index += s1.size();
 				break;
 
-			case 1://Èç¹ûÓÅÏÈ¼¶µÍÓÚÇ°Ò»¸öÔËËã·û£¬½«Ç°Ò»¸öÔËËã·ûĞ´Èëºó×º±í´ïÊ½ÖĞ
+			case 1://å¦‚æœä¼˜å…ˆçº§ä½äºå‰ä¸€ä¸ªè¿ç®—ç¬¦ï¼Œå°†å‰ä¸€ä¸ªè¿ç®—ç¬¦å†™å…¥åç¼€è¡¨è¾¾å¼ä¸­
 				postexp += stack.back();
 				stack.pop_back();
 				break;
@@ -234,22 +222,22 @@ bool trans(string &exp, string &postexp)//½«ËãÊõ±í´ïÊ½exp×ª»»³Éºó×º±í´ïÊ½postexp
 
 
 
-bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
+bool compvalue(string &postexp, double &value)//è®¡ç®—åç¼€è¡¨è¾¾å¼postexpçš„å€¼
 {
-	vector<double> data;		//´æ´¢ÊıÖµ
-	string op;					//ÔËËã·û
+	vector<double> data;		//å­˜å‚¨æ•°å€¼
+	string op;					//è¿ç®—ç¬¦
 	char ch;
 	double d, a, b, c;
 	int index = 0;
 
 	data.clear();
 
-	while (postexp[index] != '\0')		//postexp×Ö·û´®Î´É¨ÃèÍêÊ±Ñ­»·
+	while (postexp[index] != '\0')		//postexpå­—ç¬¦ä¸²æœªæ‰«æå®Œæ—¶å¾ªç¯
 	{
 		if (postexp[index] == '0' && (postexp[index + 1] == 'x' || postexp[index + 1] == 'X'))
 		{
 			index += 2;
-			//¶ÁÈ¡Ê®Áù½øÖÆÊı
+			//è¯»å–åå…­è¿›åˆ¶æ•°
 
 			d = 0;
 
@@ -271,14 +259,14 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 			else
 				return false;
 
-			//½«Êı×Ö´æÈëÕ»ÖĞ
+			//å°†æ•°å­—å­˜å…¥æ ˆä¸­
 			data.push_back(d);
 		}
 		else if (postexp[index] >= '0'&& postexp[index] <= '9')
 		{
-			//¶ÁÈ¡Ê®½øÖÆÊı
+			//è¯»å–åè¿›åˆ¶æ•°
 			d = 0;
-			while (postexp[index] >= '0' && postexp[index] <= '9')//ÎªÊı×Ö×Ö·ûÑ­»·
+			while (postexp[index] >= '0' && postexp[index] <= '9')//ä¸ºæ•°å­—å­—ç¬¦å¾ªç¯
 			{
 				d = 10 * d + postexp[index] - '0';
 				index++;
@@ -290,16 +278,16 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 			}
 			else
 			{
-				//ºó×º±í´ïÊ½´íÎó
+				//åç¼€è¡¨è¾¾å¼é”™è¯¯
 				return false;
 			}
 
-			//½«Êı×Ö´æÈëÕ»ÖĞ
+			//å°†æ•°å­—å­˜å…¥æ ˆä¸­
 			data.push_back(d);
 		}
 		else
 		{
-			//¶ÁÈ¡ÔËËã·û
+			//è¯»å–è¿ç®—ç¬¦
 			op.clear();
 			op += postexp[index++];
 			if (!Inop(op))
@@ -307,14 +295,14 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 				op += postexp[index++];
 				if (!Inop(op))
 				{
-					//Î´ÄÜ»ñÈ¡ÔËËã·û
+					//æœªèƒ½è·å–è¿ç®—ç¬¦
 					return false;
 				}
 			}
 
 			if (!data.empty())
 			{
-				a = data.back();	//µÚ¶ş²Ù×÷Êı
+				a = data.back();	//ç¬¬äºŒæ“ä½œæ•°
 				data.pop_back();
 			}
 			else
@@ -329,7 +317,7 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 			else
 			{
 				if (!data.empty())
-					b = data.back();	//µÚÒ»²Ù×÷Êı
+					b = data.back();	//ç¬¬ä¸€æ“ä½œæ•°
 				else
 					return false;
 
@@ -344,7 +332,7 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 					}
 					else
 					{
-						//³ıÁã´íÎó
+						//é™¤é›¶é”™è¯¯
 						return false;
 					}
 				}
@@ -355,7 +343,7 @@ bool compvalue(string &postexp, double &value)//¼ÆËãºó×º±í´ïÊ½postexpµÄÖµ
 				else if (op == "^")			data.back() = (unsigned int)b ^ (unsigned int)a;
 				else
 				{
-					//·Ç·¨ÔËËã·û
+					//éæ³•è¿ç®—ç¬¦
 					return false;
 				}
 			}

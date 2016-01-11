@@ -1,22 +1,18 @@
-// MIPS_asm.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
-//
-
-/* MIPS»ã±àÆ÷£¬ÓÃÓÚ×ª»»»ã±àÓïÑÔµ½»úÆ÷ÓïÑÔ£¬Êä³öROM³õÊ¼»¯ÎÄ¼ş */
-/* Ö»×÷¼òµ¥Ìæ»»²Ù×÷£¬Ö§³Öºê¶¨Òå£¬ËùÓĞÖ¸Áî¶¼´Ó0µØÖ·Á¬ĞøÅÅ·Å */
-/* Ö§³Ö²¿·İÖ¸Áî£¬¸ü¶àµÄÖ¸Áî¿ÉÒÔ¶ÔÕÕÌí¼Ó£¬Ö¸Áî¸ù¾İ½Å±¾ÎÄ¼şÉú³É */
-/* Ö§³Ö±êºÅ£¬ÓÃÓÚ²úÉúÌø×ªµØÖ· */
-
-
-
-
-
-
-/* »ã±à¹ı³Ì */
-/* ÅĞ¶Ïµ÷ÓÃ²ÎÊı£¬Èç¹ûÎªºÏÀí²ÎÊı¾Í½øĞĞÖ¸¶¨ÎÄ¼ş»ã±à£¬Ã»ÓĞÒªÇóÊÖ¶¯ÊäÈë²ÎÊı£¬²»ºÏÀí²ÎÊıÊä³öÌáÊ¾ */
-/* ¸ù¾İÍ¬Ä¿Â¼ÏÂµÄÖ¸Áî½Å±¾ÎÄ¼şÉú³ÉÖ¸Áî±í£¬ÕÒ²»µ½Ö¸Áî½Å±¾ÎÄ¼şÊä³ö´íÎó */
-/* ³õÊ¼»¯ÏµÍ³±äÁ¿£¬°üÀ¨PCÖ¸Ïò0µØÖ·£¬½¨Á¢·ûºÅÁ´±í£¬½¨Á¢Êä³ö»º³å */
-/* Ñ­»·µ¥ĞĞ½øĞĞ»ã±à£¬Ö±µ½ÎÄ¼ş½áÊø»òÓöµ½´íÎó£¬Æä¼äµÄ¿ÕĞĞºÍ×¢ÊÍ½«±»ºöÂÔµô */
-/* Êä³ö»ã±à½á¹û */
+ï»¿/** @file MIPS_asm.cpp
+  * @brief MIPSæ±‡ç¼–å™¨ï¼Œç”¨äºè½¬æ¢æ±‡ç¼–è¯­è¨€åˆ°æœºå™¨è¯­è¨€ï¼Œè¾“å‡ºROMåˆå§‹åŒ–æ–‡ä»¶ 
+  
+  * MIPSæ±‡ç¼–å™¨ï¼Œç”¨äºè½¬æ¢æ±‡ç¼–è¯­è¨€åˆ°æœºå™¨è¯­è¨€ï¼Œè¾“å‡ºROMåˆå§‹åŒ–æ–‡ä»¶\n
+  * åªä½œç®€å•æ›¿æ¢æ“ä½œï¼Œæ”¯æŒå®å®šä¹‰ï¼Œæ‰€æœ‰æŒ‡ä»¤éƒ½ä»0åœ°å€è¿ç»­æ’æ”¾\n
+  * æ”¯æŒéƒ¨ä»½æŒ‡ä»¤ï¼Œæ›´å¤šçš„æŒ‡ä»¤å¯ä»¥å¯¹ç…§æ·»åŠ ï¼ŒæŒ‡ä»¤æ ¹æ®è„šæœ¬æ–‡ä»¶ç”Ÿæˆ\n
+  * æ”¯æŒæ ‡å·ï¼Œç”¨äºäº§ç”Ÿè·³è½¬åœ°å€\n
+  * \n
+  * æ±‡ç¼–è¿‡ç¨‹\n
+  * åˆ¤æ–­è°ƒç”¨å‚æ•°ï¼Œå¦‚æœä¸ºåˆç†å‚æ•°å°±è¿›è¡ŒæŒ‡å®šæ–‡ä»¶æ±‡ç¼–ï¼Œæ²¡æœ‰è¦æ±‚æ‰‹åŠ¨è¾“å…¥å‚æ•°ï¼Œä¸åˆç†å‚æ•°è¾“å‡ºæç¤º\n
+  * æ ¹æ®åŒç›®å½•ä¸‹çš„æŒ‡ä»¤è„šæœ¬æ–‡ä»¶ç”ŸæˆæŒ‡ä»¤è¡¨ï¼Œæ‰¾ä¸åˆ°æŒ‡ä»¤è„šæœ¬æ–‡ä»¶è¾“å‡ºé”™è¯¯\n
+  * åˆå§‹åŒ–ç³»ç»Ÿå˜é‡ï¼ŒåŒ…æ‹¬PCæŒ‡å‘0åœ°å€ï¼Œå»ºç«‹ç¬¦å·é“¾è¡¨ï¼Œå»ºç«‹è¾“å‡ºç¼“å†²\n
+  * å¾ªç¯å•è¡Œè¿›è¡Œæ±‡ç¼–ï¼Œç›´åˆ°æ–‡ä»¶ç»“æŸæˆ–é‡åˆ°é”™è¯¯ï¼Œå…¶é—´çš„ç©ºè¡Œå’Œæ³¨é‡Šå°†è¢«å¿½ç•¥æ‰\n
+  * è¾“å‡ºæ±‡ç¼–ç»“æœ\n
+  */
 
 #include "stdafx.h"
 #include <string>
@@ -34,86 +30,66 @@
 #include "expression.h"
 
 using namespace std;
-//using namespace regex;
 
-
-
-#define MAX_ERROR_NUMBER	5
-#define MAX_OFFSET_BACK		-32768
+#define MAX_ERROR_NUMBER	5				/**<æœ€å¤§é”™è¯¯æ•°é‡ï¼Œè¶…è¿‡åç«‹å³ç»“æŸç¼–è¯‘*/
+#define MAX_OFFSET_BACK		-32768			
 #define MAX_OFFSET_FRONT	32767
 #define MAX_TARGET_BACK		-33554432
 #define MAX_TARGET_FRONT	33554431
 
-
-
-string work_path;
+string work_path;	/**<è½¯ä»¶çš„è¿è¡Œç›®å½•,è½¯ä»¶è¢«è°ƒç”¨æ—¶è‡ªåŠ¨è·å–æ­¤å‚æ•°*/
+int address_count;	/**<å…¨å±€çš„åœ°å€è®¡æ•°å™¨*/
 char buf[1000];
-int address_count;
 
+/** ç¬¦å·ç±»å‹ */
 enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, X_OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL, STATEMENT};
 
-/* ·ûºÅ±í */
-/* ·ûºÅ±í²ÉÓÃ¶¯Ì¬ÏòÁ¿·½Ê½´æ´¢ */
-/* ·ûºÅÃû×î³¤²»×÷ÏŞÖÆ */
-/* ·ûºÅÊı²»×÷ÏŞÖÆ£¬ÊÜÏŞÓÚintĞÍ±äÁ¿ÄÜ±í´ïµÄ×î´óÕıÕûÊıÖµ */
+
+/** \brief ç¬¦å·ç»“æ„ä½“
+  *
+  *ç¬¦å·è¡¨é‡‡ç”¨åŠ¨æ€å‘é‡æ–¹å¼å­˜å‚¨,ç¬¦å·åé•¿åº¦ä¸ä½œé™åˆ¶,
+  *ç¬¦å·æ•°ä¸ä½œé™åˆ¶ï¼Œå—é™äºintå‹å˜é‡èƒ½è¡¨è¾¾çš„æœ€å¤§æ­£æ•´æ•°å€¼ã€‚
+  */
 struct symbol_str{
-	string name;
-	int value;
-	string symbol_string;
-	symbol_type symbol_x;
+	string name;			/**<ç¬¦å·å*/
+	int value;				/**<ç¬¦å·çš„å€¼*/
+	string symbol_string;	/**<ç¬¦å·ä»£è¡¨çš„å­—ç¬¦ä¸²*/
+	symbol_type symbol_x;	/**<ç¬¦å·ç±»å‹*/
 };
 
-vector<symbol_str> symbol_tab;
+/** \brief æŒ‡ä»¤ç»“æ„ä½“
+  *
+  *æ ¹æ®æŒ‡ä»¤è„šæœ¬æ–‡ä»¶ç¼–è¯‘æŒ‡ä»¤é›†ï¼Œ
+  *æ¯æ¡æŒ‡ä»¤ç”±æºåŒ¹é…æ ¼å¼å’Œè¾“å‡ºå¤„ç†æ ¼å¼ç»„æˆï¼Œ
+  *æŒ‡ä»¤ç¼–è¯‘å®Œæˆåæ‰€æœ‰ä¿¡æ¯ä¿å­˜åœ¨æŒ‡ä»¤è¡¨ä¸­
+  */ 
+struct INS_STR{
+	regex r;				/**<æŒ‡ä»¤çš„æ­£åˆ™åŒ¹é…å¼*/
+	string source_format;	/**<æŒ‡ä»¤çš„è¾“å…¥æ ¼å¼*/
+	string output_format;	/**<æŒ‡ä»¤çš„ç¼–è¯‘è¾“å‡ºæ ¼å¼*/
+};
 
-
-
-/* Ç°ÏòÒıÓĞ·ûºÅ±í */
-/* ¼ÇÂ¼Î´ÖªµÄ·ûºÅÒıÓÃ£¬ÔÚÏÂÒ»ÂÖ²å²¹Ê±²Î¿¼ */
-
-struct INS_STR;
-
+/** \brief æœªçŸ¥ç¬¦å·ç»“æ„ä½“
+  * 
+  *è®°å½•å‰å‘å¼•ç”¨ï¼Œåœ¨ç¬¬äºŒéæ’è¡¥æ—¶å‚è€ƒï¼Œ
+  *å¦‚æœç¬¬äºŒéä¹Ÿæ— æ³•è¯†åˆ«ï¼Œåˆ™è®°å…¥é”™è¯¯
+  */
 struct unknown_symbol_str{
-	string name;
-	symbol_type symbol_x;
-	vector<INS_STR>::iterator ins_index;
-	int line;
-	int position;
+	string name;							/**<ç¬¦å·å*/
+	symbol_type symbol_x;					/**<ç¬¦å·ç±»å‹*/
+	vector<INS_STR>::iterator ins_index;	/**<ç¬¦å·æ‰€åœ¨æŒ‡ä»¤*/
+	int line;								/**<ç¬¦å·æ‰€åœ¨è¡Œ*/
+	int position;							/**<ç¬¦å·æ‰€å¯¹åº”çš„å­˜å‚¨ä½ç½®*/
 };
 
-vector<unknown_symbol_str> unknown_symbol_tab;
-
-
-/*
-	Ïò·ûºÅ±íÌí¼Ó·ûºÅ
-	Èç¹û·ûºÅ±íÒÑÓĞÏàÓ¦µÄ·ûºÅ£¬·µ»Ø´íÎó
-*/
-bool symbol_add(symbol_str &ss)
-{
-	for (auto i = symbol_tab.begin(); i != symbol_tab.end(); i++)
-	{
-		if (i->name == ss.name)
-		{
-			return false;
-		}
-	}
-
-	symbol_tab.push_back(ss);
-
-	return true;
-}
-
-
-
-
-
-
-/* ÖĞ¼ä½á¹û */
-/* ¶¯Ì¬ÏòÁ¿·½Ê½´æ´¢ */
-/* ÄÚÈİ°üÀ¨¶ş½øÖÆºÍ·ûºÅ */
-/* Ê¹ÓÃ½á¹¹ÌåÎ»Óò,Ö±½ÓºÏ³É32Î»¿íµÄ2½øÖÆÊı */
+/** \brief ä¸­é—´ç»“æœ
+  *
+  *ä¸­é—´ç»“æœä½¿ç”¨åŠ¨æ€å‘é‡æ–¹å¼å­˜å‚¨ï¼Œå†…å®¹åŒ…æ‹¬äºŒè¿›åˆ¶å’Œç¬¦å·ï¼Œ
+  *ä½¿ç”¨ç»“æ„ä½“ä½åŸŸ,ç›´æ¥åˆæˆ32ä½å®½çš„2è¿›åˆ¶æ•°
+  */
 struct middle_result_str{
-	int line;
-	int address;
+	int line;							
+	int address;						
 	union{
 		struct{
 			volatile char32_t func : 6;
@@ -151,56 +127,105 @@ struct middle_result_str{
 	}bin_str;
 };
 
+
+/** \brief ä¸­é—´ç¼–è¯‘ä¿¡æ¯ç»“æ„ä½“
+  *
+  *ç”¨äºè®°å½•ç¼–è¯‘çš„ä¸­é—´è¿‡ç¨‹ï¼Œä¾¿äºè¾“å‡ºå¯¹æ¯”ä¿¡æ¯
+  */
 struct middle_compile_information_str{
 	int line;
 	string source_string;
 	int address;
-	int bin_mask;
+	int bin_mask;			/**<äºŒè¿›åˆ¶æ©ç ï¼Œæœ‰äºè¡¨ç¤ºå½“è¡Œè¡Œæ˜¯å¦æœ‰äºŒè¿›åˆ¶è¾“å‡º*/
 };
 
+/** \brief æºæ–‡ä»¶è¾“å…¥ç»“æ„ä½“*/
+struct source_input_str{
+	unsigned int op;
+	unsigned int rs;
+	unsigned int rd;
+	unsigned int rt;
+	unsigned int sa;
+	unsigned int immediate;
+	unsigned int target;
+	unsigned int offset;
+	unsigned int tab;
+};
 
+/** \brief äºŒè¿›åˆ¶è¾“å‡ºç»“æ„ä½“*/
+struct bin_output_str{
+	unsigned int op;
+	unsigned int rs;
+	unsigned int rd;
+	unsigned int rt;
+	unsigned int sa;
+	unsigned int immediate;
+	unsigned int target;
+	unsigned int offset;
+	unsigned int instr_index;
+	unsigned int base;
+	unsigned int hint;
+	unsigned int func;
+	unsigned int tab;
+};
+
+struct source_input_str source_input;
+struct bin_output_str bin_output;
+vector<symbol_str> symbol_tab;	/**<å…¨å±€çš„ç¬¦å·è¡¨*/
+vector<unknown_symbol_str> unknown_symbol_tab; /**<å‰å‘å¼•ç”¨ç¬¦å·è¡¨ï¼Œè®°å½•æœªçŸ¥çš„ç¬¦å·å¼•ç”¨ï¼Œåœ¨ä¸‹ä¸€è½®æ’è¡¥æ—¶å‚è€ƒ*/
 vector<middle_result_str> middle_result;
 vector<middle_compile_information_str> middle_compile_information;
-
-
-regex r_null_line("^\\s*$", regex::optimize);													//Æ¥Åä¿ÕĞĞ
-regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$", regex::optimize);									//Æ¥Åä×¢ÊÍ
-regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$", regex::optimize);					//Æ¥Åä¶¨Òå
-regex r_label("^([a-zA-Z]\\w*):$", regex::optimize);											//Æ¥Åä±êÇ©
-regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$", regex::optimize);					//Æ¥ÅäÎ±Ö¸Áî
-regex r_pseudoinstruction_db("^\\s+DB\\s+((?:(?:(?:[^,\\\\\\t'\"]+)|(?:'(?:(?:\\\\\\S)|(?:[^\\\\']))')|(?:\"(?:(?:(?:\\\\\\S)|(?:(?:[^\\\\\"])))+?)\"))(?:(?:\\s*,\\s*)|(?:\\s*$)))+$)$", regex::optimize);
-regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$", regex::optimize);
-regex r_scan_exp("(?:([^,\\\\\\t'\"]+)|(?:'((?:\\\\\\S)|(?:[^\\\\']))')|(?:\"((?:(?:\\\\\\S)|(?:[^\\\\\"]))+)\"))(?:\\s*,\\s*)?", regex::optimize);	//ËÑË÷³£Á¿±í´ïÊ½¡¢×Ö·û¡¢×Ö·û´®
-regex r_scan_one_ascii("(?:\\\\(\\S))|(.)",regex::optimize);
-
-regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$", regex::optimize);						//Æ¥ÅäÖ¸Áî¶¨Òå
-regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$", regex::optimize);			//Æ¥ÅäÓï¾äÊäÈë
-regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$", regex::optimize);
-
-regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$", regex::optimize);							//Æ¥Åä¼Ä´æÆ÷
-regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)", regex::optimize);	//Æ¥Åä±í´ïÊ½ÖĞµÄ·ûºÅ
-
-
-/* Êä³ö½á¹û */
-/* Êä³öµ½Ô´ÎÄ¼şÍ¬Ä¿Â¼ÏÂ */
-/* ÓëÔ´ÎÄ¼şÍ¬Ãû£¬ºó×ºÎª.coe */
-/* ¸ñÊ½ÎªROM³õÊ¼»¯ÎÄ¼ş¸ñÊ½ */
-
-
-/*
-	¸ù¾İÖ¸Áî½Å±¾ÎÄ¼ş±àÒëÖ¸Áî¼¯
-	Ã¿ÌõÖ¸ÁîÓÉÔ´Æ¥Åä¸ñÊ½ºÍÊä³ö´¦Àí¸ñÊ½×é³É
-	Ö¸Áî±àÒëÍê³ÉºóËùÓĞĞÅÏ¢±£´æÔÚÖ¸Áî±íÖĞ
-*/
-struct INS_STR{
-	regex r;
-	string source_format;
-	string output_format;
-};
-
 vector<INS_STR>  ins;
 vector<string> ins_error_information;
+vector<string> error_information;
+string source_file_path;
 
+regex r_null_line("^\\s*$", regex::optimize);													///<åŒ¹é…ç©ºè¡Œ
+regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$", regex::optimize);									///<åŒ¹é…æ³¨é‡Š
+regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$", regex::optimize);					///<åŒ¹é…å®šä¹‰
+regex r_label("^([a-zA-Z]\\w*):$", regex::optimize);											///<åŒ¹é…æ ‡ç­¾
+regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$", regex::optimize);					///<åŒ¹é…ä¼ªæŒ‡ä»¤
+regex r_pseudoinstruction_db("^\\s+DB\\s+((?:(?:(?:[^,\\\\\\t'\"]+)|(?:'(?:(?:\\\\\\S)|(?:[^\\\\']))')|(?:\"(?:(?:(?:\\\\\\S)|(?:(?:[^\\\\\"])))+?)\"))(?:(?:\\s*,\\s*)|(?:\\s*$)))+$)$", regex::optimize);
+regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$", regex::optimize);
+regex r_scan_exp("(?:([^,\\\\\\t'\"]+)|(?:'((?:\\\\\\S)|(?:[^\\\\']))')|(?:\"((?:(?:\\\\\\S)|(?:[^\\\\\"]))+)\"))(?:\\s*,\\s*)?", regex::optimize);	///<æœç´¢å¸¸é‡è¡¨è¾¾å¼ã€å­—ç¬¦ã€å­—ç¬¦ä¸²
+regex r_scan_one_ascii("(?:\\\\(\\S))|(.)",regex::optimize);
+
+regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$", regex::optimize);						///<åŒ¹é…æŒ‡ä»¤å®šä¹‰
+regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$", regex::optimize);			///<åŒ¹é…è¯­å¥è¾“å…¥
+regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$", regex::optimize);
+
+regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$", regex::optimize);							///<åŒ¹é…å¯„å­˜å™¨
+regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)", regex::optimize);	///<åŒ¹é…è¡¨è¾¾å¼ä¸­çš„ç¬¦å·
+
+
+
+/** \brief æ·»åŠ ç¬¦å·
+*
+*å‘ç¬¦å·è¡¨æ·»åŠ ç¬¦å·ï¼Œå¦‚æœç¬¦å·è¡¨å·²æœ‰ç›¸åº”çš„ç¬¦å·ï¼Œè¿”å›é”™è¯¯
+* \param ss è¦åŠ å…¥çš„ç¬¦å·çš„å¼•ç”¨
+* \return bool æˆåŠŸåŠ å…¥è¿”å›true,è‹¥å·²æœ‰ç›¸åŒç¬¦å·è¿”å›false
+*/
+bool symbol_add(symbol_str &ss)
+{
+	for (auto i = symbol_tab.begin(); i != symbol_tab.end(); i++)
+	{
+		if (i->name == ss.name)
+		{
+			return false;
+		}
+	}
+
+	symbol_tab.push_back(ss);
+
+	return true;
+}
+
+
+/** \brief ç¼–è¯‘æŒ‡ä»¤é›†
+  *
+  *æ ¹æ®æŒ‡ä»¤è„šæœ¬ç”ŸæˆæŒ‡ä»¤é›†ï¼Œæœªè¯†åˆ«æŒ‡ä»¤è®°å…¥é”™è¯¯åˆ—è¡¨ä¸­ã€‚ 
+  * \return bool è‹¥æ— æ³•æ‰“å¼€æŒ‡ä»¤è„šæœ¬æ–‡ä»¶ï¼Œè¿”åŠ false
+  */
 bool instruction_compile(void)
 {
 	string instruction_path;
@@ -208,15 +233,15 @@ bool instruction_compile(void)
 
 	instruction_path = work_path + "\\instruction.txt";
 
-	cout << "Ö¸Áî½Å±¾£º" << instruction_path << endl;
+	cout << "æŒ‡ä»¤è„šæœ¬ï¼š" << instruction_path << endl;
 
 	instruction_file_stream.open(instruction_path);
 
 	if (instruction_file_stream)
-		cout << "Ö¸Áî½Å±¾ÎÄ¼ş´ò¿ª³É¹¦" << endl;
+		cout << "æŒ‡ä»¤è„šæœ¬æ–‡ä»¶æ‰“å¼€æˆåŠŸ" << endl;
 	else
 	{
-		cout << "Ö¸Áî½Å±¾ÎÄ¼ş´ò¿ªÊ§°Ü" << endl;
+		cout << "æŒ‡ä»¤è„šæœ¬æ–‡ä»¶æ‰“å¼€å¤±è´¥" << endl;
 		return false;
 	}
 		
@@ -236,42 +261,42 @@ bool instruction_compile(void)
 
 	while (instruction_file_stream.getline(buf, 300))
 	{
-		//¶ÔÕûÌõÖ¸Áî¸ñÊ½´®½øĞĞÆ¥Åä
+		//å¯¹æ•´æ¡æŒ‡ä»¤æ ¼å¼ä¸²è¿›è¡ŒåŒ¹é…
 		str_temp = buf;
 
-		//È¥³ıµ¥ĞĞ×¢ÊÍ
+		//å»é™¤å•è¡Œæ³¨é‡Š
 		ins_str = regex_replace(str_temp, r_comment, "$1");
 
 		if (regex_match(ins_str, result, r_null_line))
 		{
-			//¿ÕĞĞ
+			//ç©ºè¡Œ
 		}
 		else if (regex_match(ins_str, result, r_instruction_format))
 		{
 			ins_temp.source_format = result.str(1);
 			ins_temp.output_format = result.str(2);
 
-			//½øÒ»²½¶ÔÔ´ÊäÈë¸ñÊ½´®½øĞĞÆ¥Åä
+			//è¿›ä¸€æ­¥å¯¹æºè¾“å…¥æ ¼å¼ä¸²è¿›è¡ŒåŒ¹é…
 			ins_str = result.str(1);
 			if (regex_match(ins_str, result, r_instruction_source))
 			{
 				str_temp = "(?:^\\s+\\b";
-				str_temp += "(" + result[1].str() + ")";	//µÚÒ»×é£¬Ö¸ÁîÂë
+				str_temp += "(" + result[1].str() + ")";	//ç¬¬ä¸€ç»„ï¼ŒæŒ‡ä»¤ç 
 
 				if (result[2].matched)
 				{
-					str_temp += "(?:";						//Çø·Ö´ø²ÎÇé¿ö
+					str_temp += "(?:";						//åŒºåˆ†å¸¦å‚æƒ…å†µ
 					str_temp += "\\s+";
-					str_temp += "([^,]+?)";					//µÚ¶ş×é
+					str_temp += "([^,]+?)";					//ç¬¬äºŒç»„
 
 					if (result[3].matched)
 					{
-						str_temp += "(?:\\s*,\\s*([^,]+?))?";			//µÚÈı×é
+						str_temp += "(?:\\s*,\\s*([^,]+?))?";			//ç¬¬ä¸‰ç»„
 					}
 
 					if (result[4].matched)
 					{
-						str_temp += "(?:\\s*(?:(?:,)|(?:@))\\s*([^,]+?))?";			//µÚËÄ×é
+						str_temp += "(?:\\s*(?:(?:,)|(?:@))\\s*([^,]+?))?";			//ç¬¬å››ç»„
 					}
 
 					str_temp += ")?";
@@ -289,12 +314,12 @@ bool instruction_compile(void)
 				ins.push_back(ins_temp);
 			}
 			else{
-				//¼ÇÂ¼Î´Ê¶±ğÖ¸Áî
+				//è®°å½•æœªè¯†åˆ«æŒ‡ä»¤
 				ins_error_information.push_back(buf);
 			}
 		}
 		else{
-			//¼ÇÂ¼Î´Ê¶±ğÖ¸Áî
+			//è®°å½•æœªè¯†åˆ«æŒ‡ä»¤
 			ins_error_information.push_back(buf);
 		}
 	}
@@ -303,8 +328,14 @@ bool instruction_compile(void)
 }
 
 
-
-//½«char32_t×ª»¯Îª¶ş½øÖÆ±íÊ½µÄ×Ö·û´®
+/** \brief äºŒè¿›åˆ¶æ•°åˆ°å­—ç¬¦ä¸²è½¬æ¢
+  *
+  *å°†char32_tè½¬åŒ–ä¸ºäºŒè¿›åˆ¶è¡¨å¼çš„å­—ç¬¦ä¸²
+  * \param s ç›®æ ‡å­—ç¬¦ä¸²
+  * \param d32 è¦è½¬æ¢çš„æ•°å€¼
+  * \param mode å†³å®šæ˜¯å¦è¦åˆ†æ®µè¾“å‡º
+  * \return none
+  */
 void convert_char32_t_string(string &s, char32_t d32, int mode)
 {
 	int j;
@@ -340,10 +371,12 @@ void convert_char32_t_string(string &s, char32_t d32, int mode)
 }
 
 
-/*
-	Êä³öµ½ÎÄ¼ş
-	path Êä³öÂ·¾¶
-*/
+/** \brief è¾“å‡ºç¼–è¯‘ç»“æœ
+  *
+  *è¾“å‡ºæ ¼å¼ä¸ºROMåˆå§‹åŒ–æ–‡ä»¶æ ¼å¼
+  * \param path æŒ‡å®šè¾“å‡ºè·¯å¾„
+  * \return bool
+  */
 bool output_bin_file(string path)
 {
 	ofstream output_file_stream;
@@ -354,12 +387,12 @@ bool output_bin_file(string path)
 	if (!output_file_stream)
 		return false;
 
-	//Êä³öÎÄ¼şÍ·
+	//è¾“å‡ºæ–‡ä»¶å¤´
 	output_file_stream << "memory_initialization_radix=2;" << endl;
 	output_file_stream << "memory_initialization_vector=" << endl;
 
 
-	//Ñ­»·Êä³ö¶ş½øÖÆÊı
+	//å¾ªç¯è¾“å‡ºäºŒè¿›åˆ¶æ•°
 	for (auto i = middle_result.begin(); i != middle_result.end(); )
 	{
 		convert_char32_t_string(str_temp, i->bin_str.bin, 0);
@@ -371,15 +404,18 @@ bool output_bin_file(string path)
 			output_file_stream << str_temp << ";" << endl;
 	}
 
-	//¹Ø±ÕÎÄ¼ş
+	//å…³é—­æ–‡ä»¶
 	output_file_stream.close();
 	return true;
 }
 
 
-/*
-	Êä³ö»ã±àĞÅÏ¢	
-*/
+/** \brief è¾“å‡ºæ±‡ç¼–ä¿¡æ¯
+  *
+  *è¾“å‡ºæ±‡ç¼–ä¿¡æ¯ï¼Œç”¨äºåˆ†æç¼–è¯‘è¿‡ç¨‹å’Œç»“æœ
+  * \param path æŒ‡å®šè¾“å‡ºè·¯å¾„
+  * \return bool
+  */
 bool output_compile_information_file(string path)
 {
 	ofstream output_file_stream;
@@ -391,7 +427,7 @@ bool output_compile_information_file(string path)
 	if (!output_file_stream)
 		return false;
 
-	//Ñ­»·Êä³ö
+	//å¾ªç¯è¾“å‡º
 	for (auto i = middle_compile_information.begin(); i != middle_compile_information.end(); i++)
 	{
 		os_stream.str("");
@@ -412,23 +448,25 @@ bool output_compile_information_file(string path)
 						<< setw(6) << i->line << setw(4) << "" << i->source_string << endl;
 	}
 
-
-	//¹Ø±ÕÎÄ¼ş
+	//å…³é—­æ–‡ä»¶
 	output_file_stream.close();
 	return true;
 }
 
-/*
-	±í´ïÊ½ÇóÖµ
-	·µ»ØÂß¼­Öµ
-*/
+
+/** \brief è¡¨è¾¾å¼æ±‚å€¼
+  *
+  *è®¡ç®—ç»™å®šè¡¨è¾¾å¼çš„å€¼ï¼Œ
+  *é¦–å…ˆå¯¹è¡¨è¾¾å¼ä¸­çš„ç¬¦å·è¿›è¡Œè§£å¼•ç”¨ï¼Œ
+  *ç„¶åä»¥å¸¸é‡è¡¨è¾¾å¼çš„å½¢å¼è¿›è¡Œè®¡ç®—ï¼Œ
+  *ä¸èƒ½è§£å¼•ç”¨ï¼Œè¿”å›å¤±è´¥ï¼Œ
+  *è¡¨è¾¾å¼è®¡ç®—é”™è¯¯ï¼Œè¿”å›å¤±è´¥
+  * \param exp ç»™å®šè¡¨è¾¾å¼çš„å¼•ç”¨
+  * \param value ç”¨äºå­˜å‚¨è¡¨è¾¾å¼çš„è®¡ç®—ç»“æœ
+  * \return bool
+  */
 bool evaluation(string &exp, char32_t &value)
 {
-	//Ê×ÏÈ¶Ô±í´ïÊ½ÖĞµÄ·ûºÅ½øĞĞ½âÒıÓÃ
-	//È»ºóÒÔ³£Á¿±í´ïÊ½µÄĞÎÊ½½øĞĞ¼ÆËã
-	//²»ÄÜ½âÒıÓÃ£¬·µ»ØÊ§°Ü
-	//±í´ïÊ½¼ÆËã´íÎó£¬·µ»ØÊ§°Ü
-
 	string s1, s2, s3;
 	string postexp;
 	stringstream s_stream;
@@ -448,14 +486,14 @@ bool evaluation(string &exp, char32_t &value)
 		{
 			if ((*it)[1].matched)
 			{
-				//É¨Ãèµ½Ò»¸ö·ûºÅ
+				//æ‰«æåˆ°ä¸€ä¸ªç¬¦å·
 				scan_count++;
 				s1 = it->str(1);
 
-				//ÅĞ¶ÏÊÇ·ñÎª¼Ä´æÆ÷
+				//åˆ¤æ–­æ˜¯å¦ä¸ºå¯„å­˜å™¨
 				if (regex_match(s1, result, r_reg_format))
 				{
-					//ÊÇ¼Ä´æÆ÷,ÒÔ¼Ä´æÆ÷ºÅºÅÌæ»»
+					//æ˜¯å¯„å­˜å™¨,ä»¥å¯„å­˜å™¨å·å·æ›¿æ¢
 					s1 = result.str(1);
 					replace_count++;
 				}
@@ -467,14 +505,14 @@ bool evaluation(string &exp, char32_t &value)
 						{
 							if (index->symbol_x == symbol_type::DEFINE)
 							{
-								//ºê¶¨Òå£¬ÎÄ±¾Ìæ»»
+								//å®å®šä¹‰ï¼Œæ–‡æœ¬æ›¿æ¢
 								s1 = index->symbol_string;
 								replace_count++;
 								break;
 							}
 							else if (index->symbol_x == symbol_type::LABEL)
 							{
-								//±êÇ©£¬ÊıÖµ×ªÎÄ±¾ÔÙÌæ»»
+								//æ ‡ç­¾ï¼Œæ•°å€¼è½¬æ–‡æœ¬å†æ›¿æ¢
 								s_stream.clear();
 								s_stream << index->value;
 								s_stream >> s1;
@@ -493,14 +531,14 @@ bool evaluation(string &exp, char32_t &value)
 				s2 += s1;
 			}
 		}
-	} while (replace_count);	//replace_count != 0,¿ÉÄÜ»¹ÓĞÇ¶Ì×µÄ·ûºÅ£¬¼ÌĞø½øĞĞÉ¨ÃèºÍÌæ»»
+	} while (replace_count);	//replace_count != 0,å¯èƒ½è¿˜æœ‰åµŒå¥—çš„ç¬¦å·ï¼Œç»§ç»­è¿›è¡Œæ‰«æå’Œæ›¿æ¢
 
 
 
-	//´ËÊ±Ó¦¸ÃËùÓĞµÄ·ûºÅ¶¼±»Ìæ»»µôÁË£¬²»È»¾ÍÊÇ´íÎóµÄ
+	//æ­¤æ—¶åº”è¯¥æ‰€æœ‰çš„ç¬¦å·éƒ½è¢«æ›¿æ¢æ‰äº†ï¼Œä¸ç„¶å°±æ˜¯é”™è¯¯çš„
 	if (scan_count != 0)
 	{
-		//»¹ÓĞÎ´Ê¶±ğµÄ·ûºÅ£¬·µ»Ø´íÎó
+		//è¿˜æœ‰æœªè¯†åˆ«çš„ç¬¦å·ï¼Œè¿”å›é”™è¯¯
 		return false;
 	}
 
@@ -514,61 +552,24 @@ bool evaluation(string &exp, char32_t &value)
 		return false;
 	}
 
-	//ÇóÖµÍê³É£¬·µ»Ø±í´ïÊ½µÄÖµ
+	//æ±‚å€¼å®Œæˆï¼Œè¿”å›è¡¨è¾¾å¼çš„å€¼
 	value = (char32_t)value_temp;
 	return true;
 }
 
 
-
-
-
-/*
-	Ö´ĞĞ»ã±à
-	·µ»ØÂß¼­Öµ
-	»ã±àĞÅÏ¢±£´æÔÚÈ«¾Ö±äÁ¿ÖĞ
-*/
-vector<string> error_information;
-string source_file_path;
-
-struct source_input_str{
-	unsigned int op;
-	unsigned int rs;
-	unsigned int rd;
-	unsigned int rt;
-	unsigned int sa;
-	unsigned int immediate;
-	unsigned int target;
-	unsigned int offset;
-	unsigned int tab;
-}source_input;
-
-struct bin_output_str{
-	unsigned int op;
-	unsigned int rs;
-	unsigned int rd;
-	unsigned int rt;
-	unsigned int sa;
-	unsigned int immediate;
-	unsigned int target;
-	unsigned int offset;
-	unsigned int instr_index;
-	unsigned int base;
-	unsigned int hint;
-	unsigned int func;
-	unsigned int tab;
-}bin_output;
-
-
-/*
-	½âÎöÒ»ÌõÓï¾ä
-	position: -1±íÊ¾ÏòÎ²ºóÌí¼ÓÔªËØ£¬>=0±íÊ¾°´ÏÂ±ê´æ´¢
-	error_codeÓÃÓÚ·µ»Ø´íÎó´úÂë
-	1¡¢ÓÃ·¨´íÎó
-	2¡¢ÎŞ·¨½âËã
-	3¡¢Æ«ÒÆÁ¿Òç³ö
-	4¡¢Ö¸ÁîÎ´Ö§³Ö»ò²»ÍêÕû
-*/
+/** \brief è§£æä¸€æ¡è¯­å¥
+  *
+  * \param source_string æºè¯­å¥
+  * \param ins_index æŒ‡ä»¤ç´¢å¼•
+  * \param position -1è¡¨ç¤ºå‘å°¾åæ·»åŠ å…ƒç´ ï¼Œ>=0è¡¨ç¤ºæŒ‰ä¸‹æ ‡å­˜å‚¨
+  * \param error_code ç”¨äºè¿”å›é”™è¯¯ä»£ç \n
+  *        1ã€ç”¨æ³•é”™è¯¯
+  *        2ã€æ— æ³•è§£ç®—
+  *        3ã€åç§»é‡æº¢å‡º
+  *        4ã€æŒ‡ä»¤æœªæ”¯æŒæˆ–ä¸å®Œæ•´
+  * \return bool
+  */
 bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, int position, int &error_code)
 {
 	smatch result_reg;
@@ -592,12 +593,12 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	regex_match(source_string, result_source_string,ins_index->r);
 	regex_match(ins_index->source_format, result_source_format, r_instruction_source);
 
-	//¶ÔÊäÈëµÄÃ¿¸ö·ûºÅ½øĞĞ·ÖÎö£¬×ª»¯ÎªÊıÖµ
+	//å¯¹è¾“å…¥çš„æ¯ä¸ªç¬¦å·è¿›è¡Œåˆ†æï¼Œè½¬åŒ–ä¸ºæ•°å€¼
 	for (i = 2; i < 5; i++)
 	{
 		if (result_source_format[i].matched)
 		{
-			//ÌáÈ¡µ±Ç°²ÎÊıÀàĞÍ
+			//æå–å½“å‰å‚æ•°ç±»å‹
 			s2 = result_source_format.str(i);
 			if (s2 == "immediate")				symbol_x_temp = symbol_type::IMMEDIATE;
 			else if (s2 == "SA")				symbol_x_temp = symbol_type::SA;
@@ -611,65 +612,65 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			else if (s2 == "RT")				symbol_x_temp = symbol_type::RT;
 			else if (s2 == "RD")				symbol_x_temp = symbol_type::RD;
 
-			//²»Çø·Ö¼Ä´æÆ÷ºÍÆäËü²ÎÊı
-			//ÕâÀïÓ¦¸ÃµÃµ½Ò»¸ö³£Á¿Öµ
-			//Èç¹ûÎŞ·¨½âËã³öÖµÀ´£¬·µ»ØÊ§°Ü
+			//ä¸åŒºåˆ†å¯„å­˜å™¨å’Œå…¶å®ƒå‚æ•°
+			//è¿™é‡Œåº”è¯¥å¾—åˆ°ä¸€ä¸ªå¸¸é‡å€¼
+			//å¦‚æœæ— æ³•è§£ç®—å‡ºå€¼æ¥ï¼Œè¿”å›å¤±è´¥
 			s1 = result_source_string[i].str();
 			if (evaluation(s1, value_temp))
 			{
-				//¿ÉÖ±½Ó½âËã
+				//å¯ç›´æ¥è§£ç®—
 				switch (symbol_x_temp)
 				{
 				case symbol_type::IMMEDIATE:		bin_output.immediate = value_temp;	break;
 				case symbol_type::SA:				bin_output.sa = value_temp;			break;
 				case symbol_type::OFFSET:
 				{
-					//Æ«ÒÆÁ¿ = Ä¿±êµØÖ· - µ±Ç°PC
+					//åç§»é‡ = ç›®æ ‡åœ°å€ - å½“å‰PC
 					offset = value_temp - position;
 					offset /= 4;
 
 					if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
 					{
-						//´íÎó´úÂë3¡¢Æ«ÒÆÁ¿Òç³ö
+						//é”™è¯¯ä»£ç 3ã€åç§»é‡æº¢å‡º
 						error_code = 3;
 						return false;
 					}
 
-					//×ª»»Îª¶ÔÓ¦²¹ÂëµÄ16Î»¶ş½øÖÆ
+					//è½¬æ¢ä¸ºå¯¹åº”è¡¥ç çš„16ä½äºŒè¿›åˆ¶
 					bin_output.offset = 65536 + offset;
 				}break;
 				case symbol_type::X_OFFSET:
 				{
-					//Ïà¶ÔÓÚ¼Ä´æÆ÷Æ«ÒÆ
+					//ç›¸å¯¹äºå¯„å­˜å™¨åç§»
 					offset = value_temp;
 					offset /= 4;
 
 					if (offset<MAX_OFFSET_BACK || offset>MAX_OFFSET_FRONT)
 					{
-						//´íÎó´úÂë3¡¢Æ«ÒÆÁ¿Òç³ö
+						//é”™è¯¯ä»£ç 3ã€åç§»é‡æº¢å‡º
 						error_code = 3;
 						return false;
 					}
 
-					//×ª»»Îª¶ÔÓ¦²¹ÂëµÄ16Î»¶ş½øÖÆ
+					//è½¬æ¢ä¸ºå¯¹åº”è¡¥ç çš„16ä½äºŒè¿›åˆ¶
 					bin_output.offset = 65536 + offset;
 				}break;
 				case symbol_type::TARGET:
 				{
-					//26Î»Æ«ÒÆÁ¿,ÔÚµ±Ç°Ö¸Áî¸½½üµÄ256MBµÄ·¶Î§ÄÚÌø×ª
-					//Æ«ÒÆÁ¿ = Ä¿±êµØÖ· - µ±Ç°PC
-					//²¹Âë = 26Î»Ä£ + Æ«ÒÆÁ¿
+					//26ä½åç§»é‡,åœ¨å½“å‰æŒ‡ä»¤é™„è¿‘çš„256MBçš„èŒƒå›´å†…è·³è½¬
+					//åç§»é‡ = ç›®æ ‡åœ°å€ - å½“å‰PC
+					//è¡¥ç  = 26ä½æ¨¡ + åç§»é‡
 					target = value_temp - position;
 					target /= 4;
 
 					if (target<MAX_TARGET_BACK || target>MAX_TARGET_FRONT)
 					{
-						//´íÎó´úÂë3¡¢Æ«ÒÆÁ¿Òç³ö
+						//é”™è¯¯ä»£ç 3ã€åç§»é‡æº¢å‡º
 						error_code = 3;
 						return false;
 					}
 
-					//×ª»»Îª¶ÔÓ¦²¹ÂëµÄ26Î»¶ş½øÖÆ
+					//è½¬æ¢ä¸ºå¯¹åº”è¡¥ç çš„26ä½äºŒè¿›åˆ¶
 					bin_output.target = 67108864 + target;
 				}break;
 				case symbol_type::INSTR_INDEX:break;
@@ -682,20 +683,20 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			}
 			else
 			{
-				//·µ»Ø´íÎó´úÂë£¬2¡¢ÎŞ·¨½âËã
+				//è¿”å›é”™è¯¯ä»£ç ï¼Œ2ã€æ— æ³•è§£ç®—
 				error_code = 2;
 				return false;
 			}	
 		}
 		else
 		{
-			//Ã»ÓĞ¿ÉÓÃµÄÆ¥ÅäÏî£¬½áÊøÑ­»·
+			//æ²¡æœ‰å¯ç”¨çš„åŒ¹é…é¡¹ï¼Œç»“æŸå¾ªç¯
 			break;
 		}
 	}
 
-	//½âËãÍê³É
-	//ÒÀ¾İÊä³ö¸ñÊ½£¬°´Î»Ìî³ä
+	//è§£ç®—å®Œæˆ
+	//ä¾æ®è¾“å‡ºæ ¼å¼ï¼ŒæŒ‰ä½å¡«å……
 	regex_match(ins_index->output_format, result_output_format, r_instruction_output);
 
 	bit_count = 0;
@@ -705,7 +706,7 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 	{
 		if (result_output_format[i].matched)
 		{
-			//ÌáÈ¡µ±Ç°²ÎÊıÀàĞÍ
+			//æå–å½“å‰å‚æ•°ç±»å‹
 			s2 = result_output_format[i].str();
 			if (s2 == "immediate")				symbol_x_temp = symbol_type::IMMEDIATE;
 			else if (s2 == "SA")				symbol_x_temp = symbol_type::SA;
@@ -719,10 +720,10 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 			else if (s2 == "RD")				symbol_x_temp = symbol_type::RD;
 
 
-			//Çø·Ö¿ªÖ±½ÓÊıºÍ²ÎÊı
+			//åŒºåˆ†å¼€ç›´æ¥æ•°å’Œå‚æ•°
 			if (s2[0] == '#')
 			{
-				//Ö±½ÓÊı£¬½«¶ş½øÖÆ´®×ª»¯ÎªintĞÍ£¬²¢´æÈëÖĞ¼ä½á¹û
+				//ç›´æ¥æ•°ï¼Œå°†äºŒè¿›åˆ¶ä¸²è½¬åŒ–ä¸ºintå‹ï¼Œå¹¶å­˜å…¥ä¸­é—´ç»“æœ
 				value_temp = binary_to_uint(result_output_format[i].str(), bits);
 				bit_count += bits;
 
@@ -748,28 +749,32 @@ bool one_statement(string &source_string,vector<INS_STR>::iterator &ins_index, i
 		}
 		else
 		{
-			//Ã»ÓĞ¿ÉÓÃµÄÆ¥ÅäÏî£¬½áÊøÑ­»·
+			//æ²¡æœ‰å¯ç”¨çš„åŒ¹é…é¡¹ï¼Œç»“æŸå¾ªç¯
 			break;
 		}
 	}
 
-	//ºË²é¶ş½øÖÆ½á¹û
+	//æ ¸æŸ¥äºŒè¿›åˆ¶ç»“æœ
 	if (bit_count != 32)
 	{
-		//´íÎó´úÂë4¡¢Ö¸ÁîÎ´Ö§³Ö»ò²»ÍêÕû
+		//é”™è¯¯ä»£ç 4ã€æŒ‡ä»¤æœªæ”¯æŒæˆ–ä¸å®Œæ•´
 		error_code = 4;
 		return false;
 	}
 
-	//´æÈë½á¹û
+	//å­˜å…¥ç»“æœ
 	middle_result[position/4] = middle_result_temp;
 
 	return true;
 }
 
 
-
-//Ìí¼Ó´íÎó¼ÇÂ¼
+/** \brief æ·»åŠ é”™è¯¯è®°å½•
+  *
+  * \param line è¡Œå·
+  * \param error_code é”™è¯¯ä»£ç 
+  * \param s é”™è¯¯è¯­å¥
+  */
 void add_error_information(int line, int error_code, string &s)
 {
 	stringstream s_stream;
@@ -781,11 +786,11 @@ void add_error_information(int line, int error_code, string &s)
 
 	switch (error_code)
 	{
-	case 1:		s_temp += "ÓÃ·¨´íÎó";				break;
-	case 2:		s_temp += "ÎŞ·¨½âËã";				break;
-	case 3:		s_temp += "Æ«ÒÆÁ¿Òç³ö ";			break;
-	case 4:		s_temp += "Ö¸ÁîÎ´Ö§³Ö»ò²»ÍêÕû ";	break;
-	case 5:		s_temp += "·ûºÅÃûÖØ¸´";				break;
+	case 1:		s_temp += "ç”¨æ³•é”™è¯¯";				break;
+	case 2:		s_temp += "æ— æ³•è§£ç®—";				break;
+	case 3:		s_temp += "åç§»é‡æº¢å‡º ";			break;
+	case 4:		s_temp += "æŒ‡ä»¤æœªæ”¯æŒæˆ–ä¸å®Œæ•´ ";	break;
+	case 5:		s_temp += "ç¬¦å·åé‡å¤";				break;
 	}
 
 	s_temp += s;
@@ -793,9 +798,12 @@ void add_error_information(int line, int error_code, string &s)
 }
 
 
-/*
-	´¦Àí×ªÒå×Ö·û
-*/
+/** \brief å¤„ç†è½¬ä¹‰å­—ç¬¦
+  *
+  * æ”¯æŒçš„è½¬ä¹‰å­—ç¬¦\\t   \\n   \\r   \\\\   \\'   \\"
+  * \param ch å¾…å¤„ç†å­—ç¬¦
+  * \return bool ä¸è¯†åˆ«è¿”å›false
+  */
 bool conver_ascii(char &ch)
 {
 	switch (ch)
@@ -813,7 +821,11 @@ bool conver_ascii(char &ch)
 }
 
 
-
+/** æ‰§è¡Œæ±‡ç¼–
+  *
+  *æ±‡ç¼–ä¿¡æ¯ä¿å­˜åœ¨å…¨å±€å˜é‡ä¸­
+  * \return bool
+  */
 bool assembly_execute(void)
 {
 	int line;
@@ -840,65 +852,65 @@ bool assembly_execute(void)
 	auto ins_index = ins.begin();
 
 
-	//Ö¸³ö²Ù×÷ÎÄ¼ş,²¢ÅĞ¶ÏÎÄ¼şÂ·¾¶ºÏÀíĞÔ
-	cout << "»ã±àÎÄ¼ş£º" << source_file_path << endl;
+	//æŒ‡å‡ºæ“ä½œæ–‡ä»¶,å¹¶åˆ¤æ–­æ–‡ä»¶è·¯å¾„åˆç†æ€§
+	cout << "æ±‡ç¼–æ–‡ä»¶ï¼š" << source_file_path << endl;
 	source_file_stream.open(source_file_path, ifstream::in);
 	if (source_file_stream)
 	{
-		cout << "´ò¿ª»ã±àÎÄ¼ş³É¹¦¡£" << endl;
+		cout << "æ‰“å¼€æ±‡ç¼–æ–‡ä»¶æˆåŠŸã€‚" << endl;
 	}
 	else
 	{
-		cout << "´ò¿ª»ã±àÎÄ¼şÊ§°Ü¡£" << endl;
+		cout << "æ‰“å¼€æ±‡ç¼–æ–‡ä»¶å¤±è´¥ã€‚" << endl;
 		return false;
 	}
 
-	//³õÊ¼»¯±äÁ¿
+	//åˆå§‹åŒ–å˜é‡
 	line = 1;
 	address_count = 0;
 
-	//È¡Ò»ĞĞÎÄ±¾
+	//å–ä¸€è¡Œæ–‡æœ¬
 	while (source_file_stream.getline(buf,500))
 	{
 		s1 = buf;
 
-		//¼ÇÂ¼»ã±àĞÅÏ¢
+		//è®°å½•æ±‡ç¼–ä¿¡æ¯
 		middle_compile_information_temp.line = line;
 		middle_compile_information_temp.source_string = s1;
 		middle_compile_information_temp.bin_mask = 0;
 
-		//È¥³ıµ¥ĞĞ×¢ÊÍ
+		//å»é™¤å•è¡Œæ³¨é‡Š
 		source_one_line = regex_replace(s1, r_comment, "$1");
 
 		if (regex_match(source_one_line, result_null_line, r_null_line))
 		{
-			//¿ÕĞĞ
+			//ç©ºè¡Œ
 		}
 		else if (regex_match(source_one_line, result_define, r_define))
 		{
-			//ÅĞ¶ÏÊÇºê¶¨Òå
+			//åˆ¤æ–­æ˜¯å®å®šä¹‰
 			symbol_temp.name = result_define.str(1);
 			symbol_temp.symbol_string = result_define.str(2);
 			symbol_temp.symbol_x = symbol_type::DEFINE;
 
 			if (!symbol_add(symbol_temp))
 			{
-				//·ûºÅÃûÖØ¸´
-				s2 = "·ûºÅÃûÖØ¸´£º" + symbol_temp.name;
+				//ç¬¦å·åé‡å¤
+				s2 = "ç¬¦å·åé‡å¤ï¼š" + symbol_temp.name;
 				add_error_information(line, 5, s2);
 			}
 		}
 		else if (regex_match(source_one_line, result_label, r_label))
 		{
-			//ÅĞ¶ÏÊÇ±êÇ©
+			//åˆ¤æ–­æ˜¯æ ‡ç­¾
 			symbol_temp.name = result_label.str(1);
 			symbol_temp.symbol_x = symbol_type::LABEL;
 			symbol_temp.value = address_count;
 
 			if (!symbol_add(symbol_temp))
 			{
-				//·ûºÅÃûÖØ¸´
-				s2 = "·ûºÅÃûÖØ¸´£º" + symbol_temp.name;
+				//ç¬¦å·åé‡å¤
+				s2 = "ç¬¦å·åé‡å¤ï¼š" + symbol_temp.name;
 				add_error_information(line, 5, s2);
 			}
 		}
@@ -907,21 +919,21 @@ bool assembly_execute(void)
 			middle_compile_information_temp.bin_mask = 1;
 			middle_compile_information_temp.address = address_count;
 
-			//±£ÁôÒ»Æ¬´æ´¢ÇøÓò
+			//ä¿ç•™ä¸€ç‰‡å­˜å‚¨åŒºåŸŸ
 			if (evaluation(result.str(1), value_temp))
 			{
 				middle_result_temp.bin_str.bin = 0;
-				value_temp = (char32_t)ceil(value_temp/4.0);			//ÕıÏòÈ¡Õû£¬×÷×Ö¶ÔÆë
+				value_temp = (char32_t)ceil(value_temp/4.0);			//æ­£å‘å–æ•´ï¼Œä½œå­—å¯¹é½
 				
 				while (value_temp--)
 				{
 					middle_result.push_back(middle_result_temp);
-					address_count += 4;									//µØÖ·¼ÆÊı
+					address_count += 4;									//åœ°å€è®¡æ•°
 				}
 			}
 			else
 			{
-				//¼ÇÈë´íÎó
+				//è®°å…¥é”™è¯¯
 				add_error_information(line, 0, s1);
 			}
 		}
@@ -930,7 +942,7 @@ bool assembly_execute(void)
 			middle_compile_information_temp.bin_mask = 1;
 			middle_compile_information_temp.address = address_count;
 
-			//ÒÔ×Ö½ÚÎªµ¥Î»³õÊ¼»¯´æ´¢Æ÷
+			//ä»¥å­—èŠ‚ä¸ºå•ä½åˆå§‹åŒ–å­˜å‚¨å™¨
 			s2 = result[1].str();
 			i = 4;
 
@@ -950,7 +962,7 @@ bool assembly_execute(void)
 					}
 					else
 					{
-						//´íÎó
+						//é”™è¯¯
 						add_error_information(line, 0, s1);
 						break;
 					}
@@ -962,11 +974,11 @@ bool assembly_execute(void)
 					{
 						if ((*ascii_it)[1].matched)
 						{
-							//×ªÒå·û
+							//è½¬ä¹‰ç¬¦
 							ch = (*ascii_it)[1].str()[0];
 							if (!conver_ascii(ch))
 							{
-								//´íÎó
+								//é”™è¯¯
 								add_error_information(line, 0, s1);
 								break;
 							}
@@ -992,11 +1004,11 @@ bool assembly_execute(void)
 					{
 						if ((*ascii_it)[1].matched)
 						{
-							//×ªÒå·û
+							//è½¬ä¹‰ç¬¦
 							ch = (*ascii_it)[1].str()[0];
 							if (!conver_ascii(ch))
 							{
-								//´íÎó
+								//é”™è¯¯
 								add_error_information(line, 0, s1);
 								break;
 							}
@@ -1017,7 +1029,7 @@ bool assembly_execute(void)
 				}
 			}
 			
-			//¶ÔÆë
+			//å¯¹é½
 			if (i != 4)
 			{
 				middle_result.push_back(middle_result_temp);
@@ -1029,7 +1041,7 @@ bool assembly_execute(void)
 			middle_compile_information_temp.bin_mask = 1;
 			middle_compile_information_temp.address = address_count;
 
-			//ÒÔ×ÖÎªµ¥Î»³õÊ¼»¯´æ´¢Æ÷
+			//ä»¥å­—ä¸ºå•ä½åˆå§‹åŒ–å­˜å‚¨å™¨
 			s2 = result.str(1);
 			for (sregex_iterator it(s2.begin(), s2.end(), r_scan_exp), end_it; it != end_it; it++)
 			{
@@ -1043,36 +1055,32 @@ bool assembly_execute(void)
 					}
 					else
 					{
-						//´íÎó
+						//é”™è¯¯
 						add_error_information(line, 0, s1);
 						break;
 					}
 				}
-
-
 			}
-
-
 		}
 		else
 		{
-			//·Ö±ğ¶ÔÔ´ÊäÈë¸ñÊ½´®ºÍ»ã±àÓï¾ä½øĞĞÆ¥Åä£¬ÌáÈ¡³öÊäÈëÖµ
+			//åˆ†åˆ«å¯¹æºè¾“å…¥æ ¼å¼ä¸²å’Œæ±‡ç¼–è¯­å¥è¿›è¡ŒåŒ¹é…ï¼Œæå–å‡ºè¾“å…¥å€¼
 			for (ins_index = ins.begin(); ins_index != ins.end(); ins_index++)
 			{
 				if (regex_match(source_one_line, result, ins_index->r))
 				{
-					//Æ¥Åäµ½Ò»ÌõÓï¾ä£¬½øĞĞ´¦Àí
+					//åŒ¹é…åˆ°ä¸€æ¡è¯­å¥ï¼Œè¿›è¡Œå¤„ç†
 
-					//Ìí¼ÓÒ»ÌõÖ¸ÁîµÄ¿Õ¼ä
+					//æ·»åŠ ä¸€æ¡æŒ‡ä»¤çš„ç©ºé—´
 					middle_result.push_back(middle_result_temp);
 	
 					if (one_statement(source_one_line, ins_index, address_count, error_code))
 					{
-						//½âËã³É¹¦
+						//è§£ç®—æˆåŠŸ
 					}
 					else
 					{
-						//½âËãÊ§°Ü£¬¼ÆÈëÎ´Öª·ûºÅ±í
+						//è§£ç®—å¤±è´¥ï¼Œè®¡å…¥æœªçŸ¥ç¬¦å·è¡¨
 						unknown_symbol_temp.name = source_one_line;
 						unknown_symbol_temp.position = address_count;
 						unknown_symbol_temp.symbol_x = symbol_type::STATEMENT;
@@ -1084,66 +1092,65 @@ bool assembly_execute(void)
 					middle_compile_information_temp.bin_mask = 1;
 					middle_compile_information_temp.address = address_count;
 
-					address_count += 4;			//µØÖ·¼ÆÊı
+					address_count += 4;			//åœ°å€è®¡æ•°
 
-					//ÇøÅäµ½Ò»ÌõÓï¾ä£¬²¢Íê³É´¦Àí£¬½áÊøÑ­»·
+					//åŒºé…åˆ°ä¸€æ¡è¯­å¥ï¼Œå¹¶å®Œæˆå¤„ç†ï¼Œç»“æŸå¾ªç¯
 					break;
 				}
 			}
 
-			//´íÎó´¦Àí
+			//é”™è¯¯å¤„ç†
 			if (ins_index == ins.end())
 			{
 				add_error_information(line, 0, s1);
 			}
 		}
 	
-		//ĞĞºÅ¼ÆÊı
+		//è¡Œå·è®¡æ•°
 		line++;
 
-		//´æ´¢»ã±àĞÅÏ¢
+		//å­˜å‚¨æ±‡ç¼–ä¿¡æ¯
 		middle_compile_information.push_back(middle_compile_information_temp);
 	}
 
-	//¹Ø±ÕÎÄ¼ş
+	//å…³é—­æ–‡ä»¶
 	source_file_stream.close();
 
-	//½øĞĞµÚ¶ş´ÎÉ¨Ãè£¬Ìæ»»Ç°ÏòÒıÓÃ·ûºÅ
+	//è¿›è¡Œç¬¬äºŒæ¬¡æ‰«æï¼Œæ›¿æ¢å‰å‘å¼•ç”¨ç¬¦å·
 	for (auto i = unknown_symbol_tab.begin(); i != unknown_symbol_tab.end(); i++)
 	{
 		if (one_statement(i->name, i->ins_index, i->position, error_code))
 		{
-			//µÚ¶ş´Î½âËã³É¹¦
+			//ç¬¬äºŒæ¬¡è§£ç®—æˆåŠŸ
 		}
 		else
 		{
-			//µÚ¶ş´ÎÈÔÎŞ·¨½âËã£¬¼ÆÈë´íÎó
+			//ç¬¬äºŒæ¬¡ä»æ— æ³•è§£ç®—ï¼Œè®¡å…¥é”™è¯¯
 			add_error_information(line, error_code, i->name);
 		}
 	}
 
-
 	if (error_information.empty())
 	{
-		//µÃµ½ÍêÈ«µÄ¶ş½øÖÆÊı£¬Êä³öµ½ÎÄ¼ş
-		//µÃµ½ÍêÈ«µÄ¶ş½øÖÆÊı£¬Êä³öµ½ÎÄ¼ş
+		//å¾—åˆ°å®Œå…¨çš„äºŒè¿›åˆ¶æ•°ï¼Œè¾“å‡ºåˆ°æ–‡ä»¶
+		//å¾—åˆ°å®Œå…¨çš„äºŒè¿›åˆ¶æ•°ï¼Œè¾“å‡ºåˆ°æ–‡ä»¶
 		if (output_bin_file(work_path + "\\output.txt"))
 		{
-			cout << "Êä³öÎÄ¼ş³É¹¦" << endl;
+			cout << "è¾“å‡ºæ–‡ä»¶æˆåŠŸ" << endl;
 		}
 		else
 		{
-			cout << "Êä³öÎÄ¼şÊ§°Ü" << endl;
+			cout << "è¾“å‡ºæ–‡ä»¶å¤±è´¥" << endl;
 			return false;
 		}
 
 		if (output_compile_information_file(work_path + "\\x_output.txt"))
 		{
-			cout << "Êä³ö±àÒëĞÅÏ¢³É¹¦" << endl;
+			cout << "è¾“å‡ºç¼–è¯‘ä¿¡æ¯æˆåŠŸ" << endl;
 		}
 		else
 		{
-			cout << "Êä³öÎÄ¼şÊ§°Ü" << endl;
+			cout << "è¾“å‡ºæ–‡ä»¶å¤±è´¥" << endl;
 			return false;
 		}
 	}
@@ -1157,15 +1164,13 @@ bool assembly_execute(void)
 
 int main(int argc, char *argv[])
 {
-
-
 	GetCurrentDirectoryA(1000, buf);
 	work_path = buf;
 
 	if (argc == 1)
 	{
-		////Ã»ÓĞ´«ÈëÎÄ¼şÂ·¾¶£¬ÊÖ¶¯ÊäÈë
-		//cout << "ÊäÈëÎÄ¼şÂ·¾¶£º" << endl;
+		////æ²¡æœ‰ä¼ å…¥æ–‡ä»¶è·¯å¾„ï¼Œæ‰‹åŠ¨è¾“å…¥
+		//cout << "è¾“å…¥æ–‡ä»¶è·¯å¾„ï¼š" << endl;
 		//cin >> file_path;
 		source_file_path = work_path + "\\ASM_Test.txt";
 	}
@@ -1176,21 +1181,21 @@ int main(int argc, char *argv[])
 
 
 
-	cout << "µ±Ç°Ä¿Â¼£º" << work_path << endl;
+	cout << "å½“å‰ç›®å½•ï¼š" << work_path << endl;
 
-	//¸ù¾İÖ¸Áî¶¨Òå½Å±¾Éú³ÉÖ¸Áî´¦Àí·½°¸
+	//æ ¹æ®æŒ‡ä»¤å®šä¹‰è„šæœ¬ç”ŸæˆæŒ‡ä»¤å¤„ç†æ–¹æ¡ˆ
 	if (instruction_compile() == false)
 	{
-		cout << "Ö¸Áî½Å±¾´íÎó" << endl;
+		cout << "æŒ‡ä»¤è„šæœ¬é”™è¯¯" << endl;
 		system("PAUSE");
 		return 0;
 	}
 	else
 	{
-		cout << "¶ÁÈ¡Ö¸Áî½Å±¾³É¹¦£¬" << "¹²É¨Ãèµ½" << ins.size() << "ÌõÖ¸Áî" << endl;
+		cout << "è¯»å–æŒ‡ä»¤è„šæœ¬æˆåŠŸï¼Œ" << "å…±æ‰«æåˆ°" << ins.size() << "æ¡æŒ‡ä»¤" << endl;
 		if (!ins_error_information.empty())
 		{
-			cout << "Î´Ê¶±ğÖ¸Áî£º" << endl;
+			cout << "æœªè¯†åˆ«æŒ‡ä»¤ï¼š" << endl;
 			for (auto i = ins_error_information.begin(); i != ins_error_information.end(); i++)
 			{
 				cout << *i << endl;
@@ -1198,16 +1203,16 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//Æô¶¯»ã±à
+	//å¯åŠ¨æ±‡ç¼–
 	if (assembly_execute())
 	{
-		cout << "»ã±àÍê³É" << endl;
+		cout << "æ±‡ç¼–å®Œæˆ" << endl;
 		cout << "size:" << address_count << endl;
 	}
 	else
 	{
-		cout << "\n\n»ã±àÊ§°Ü" << endl;
-		cout << "´íÎó£º" << error_information.size() << endl;
+		cout << "\n\næ±‡ç¼–å¤±è´¥" << endl;
+		cout << "é”™è¯¯ï¼š" << error_information.size() << endl;
 
 		for (auto i = error_information.begin(); i != error_information.end(); i++)
 		{
