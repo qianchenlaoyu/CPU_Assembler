@@ -1,0 +1,18 @@
+汇编器还没有经过较为严格的测试。
+
+instruction.txt里面定义了指令集，可以参照指令定义方法定义更多的指令。
+instruction.txt和汇编源文件必须放到同MIPS_asm.exe同一目录下。
+
+汇编源文件名可以不是ASM_Test.txt。
+
+
+启用方法：
+    1、用左键拖动汇编源文件到MIPS_asm.exe上，启动汇编；源文件名任意。
+    2、源文件以ASM_Test.txt命名，直接双击MIPS_asm.exe即可。
+
+
+输出：
+    汇编结果将输出到源文件相同目录下。
+    output.txt为存储器初始化格式的二进制输出。
+    x_output.txt主要是为了便于校验汇编结果、查看。
+
