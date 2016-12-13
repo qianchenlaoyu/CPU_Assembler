@@ -37,9 +37,9 @@ using namespace std;
 #define MAX_TARGET_BACK		-33554432
 #define MAX_TARGET_FRONT	33554431
 
-string work_path;	/**<软件的运行目录,软件被调用时自动获取此参数*/
-int address_count;	/**<全局的地址计数器*/
-char buf[1000];
+static string work_path;	/**<软件的运行目录,软件被调用时自动获取此参数*/
+static int address_count;	/**<全局的地址计数器*/
+static char buf[1000];
 
 /** 符号类型 */
 enum class symbol_type{ RS, RD, RT, SA, IMMEDIATE, TARGET, OFFSET, X_OFFSET, INSTR_INDEX, BASE, HINT, DEFINE, LABEL, STATEMENT};
@@ -92,38 +92,38 @@ struct middle_result_str{
 	int address;						
 	union{
 		struct{
-			volatile char32_t func : 6;
-			volatile char32_t sa : 5;
-			volatile char32_t rd : 5;
-			volatile char32_t rt : 5;
-			volatile char32_t rs : 5;
-			volatile char32_t op : 6;
+			char32_t func : 6;
+			char32_t sa : 5;
+			char32_t rd : 5;
+			char32_t rt : 5;
+			char32_t rs : 5;
+			char32_t op : 6;
 		};
 
 		struct{
-			volatile char32_t immediate : 16;
-			volatile char32_t : 16;
+			char32_t immediate : 16;
+			char32_t : 16;
 		};
 
 		struct{
-			volatile char32_t target : 26;
-			volatile char32_t : 6;
+			char32_t target : 26;
+			char32_t : 6;
 		};
 
 		struct{
-			volatile char32_t instr_index : 26;
-			volatile char32_t : 6;
+			char32_t instr_index : 26;
+			char32_t : 6;
 		};
 
 		struct{
-			volatile char32_t offset : 16;
-			volatile char32_t : 5;
-			volatile char32_t base : 5;
-			volatile char32_t : 6;
+			char32_t offset : 16;
+			char32_t : 5;
+			char32_t base : 5;
+			char32_t : 6;
 		};
 
-		volatile char32_t bin;
-		volatile char arr[4];
+		char32_t bin;
+		char arr[4];
 	}bin_str;
 };
 
@@ -169,33 +169,33 @@ struct bin_output_str{
 	unsigned int tab;
 };
 
-struct source_input_str source_input;
-struct bin_output_str bin_output;
-vector<symbol_str> symbol_tab;	/**<全局的符号表*/
-vector<unknown_symbol_str> unknown_symbol_tab; /**<前向引用符号表，记录未知的符号引用，在下一轮插补时参考*/
-vector<middle_result_str> middle_result;
-vector<middle_compile_information_str> middle_compile_information;
-vector<INS_STR>  ins;
-vector<string> ins_error_information;
-vector<string> error_information;
-string source_file_path;
+static struct source_input_str source_input;
+static struct bin_output_str bin_output;
+static vector<symbol_str> symbol_tab;	/**<全局的符号表*/
+static vector<unknown_symbol_str> unknown_symbol_tab; /**<前向引用符号表，记录未知的符号引用，在下一轮插补时参考*/
+static vector<middle_result_str> middle_result;
+static vector<middle_compile_information_str> middle_compile_information;
+static vector<INS_STR>  ins;
+static vector<string> ins_error_information;
+static vector<string> error_information;
+static string source_file_path;
 
-regex r_null_line("^\\s*$", regex::optimize);													///<匹配空行
-regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$", regex::optimize);									///<匹配注释
-regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$", regex::optimize);					///<匹配定义
-regex r_label("^([a-zA-Z]\\w*):$", regex::optimize);											///<匹配标签
-regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$", regex::optimize);					///<匹配伪指令
-regex r_pseudoinstruction_db("^\\s+DB\\s+((?:(?:(?:[^,\\\\\\t'\"]+)|(?:'(?:(?:\\\\\\S)|(?:[^\\\\']))')|(?:\"(?:(?:(?:\\\\\\S)|(?:(?:[^\\\\\"])))+?)\"))(?:(?:\\s*,\\s*)|(?:\\s*$)))+$)$", regex::optimize);
-regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$", regex::optimize);
-regex r_scan_exp("(?:([^,\\\\\\t'\"]+)|(?:'((?:\\\\\\S)|(?:[^\\\\']))')|(?:\"((?:(?:\\\\\\S)|(?:[^\\\\\"]))+)\"))(?:\\s*,\\s*)?", regex::optimize);	///<搜索常量表达式、字符、字符串
-regex r_scan_one_ascii("(?:\\\\(\\S))|(.)",regex::optimize);
+static regex r_null_line("^\\s*$", regex::optimize);													///<匹配空行
+static regex r_comment("^(.*?)((\\s*//.*)|(\\s*))$", regex::optimize);									///<匹配注释
+static regex r_define("^\\s*#define\\s+([a-zA-Z]\\w*)\\s+(.*?)$", regex::optimize);					///<匹配定义
+static regex r_label("^([a-zA-Z]\\w*):$", regex::optimize);											///<匹配标签
+static regex r_pseudoinstruction_ds("^\\s+DS\\s+([^,\t\n]+?)\\s*$", regex::optimize);					///<匹配伪指令
+static regex r_pseudoinstruction_db("^\\s+DB\\s+((?:(?:(?:[^,\\\\\\t'\"]+)|(?:'(?:(?:\\\\\\S)|(?:[^\\\\']))')|(?:\"(?:(?:(?:\\\\\\S)|(?:(?:[^\\\\\"])))+?)\"))(?:(?:\\s*,\\s*)|(?:\\s*$)))+$)$", regex::optimize);
+static regex r_pseudoinstruction_dw("^\\s+DW\\s+(.+?)\\s*$", regex::optimize);
+static regex r_scan_exp("(?:([^,\\\\\\t'\"]+)|(?:'((?:\\\\\\S)|(?:[^\\\\']))')|(?:\"((?:(?:\\\\\\S)|(?:[^\\\\\"]))+)\"))(?:\\s*,\\s*)?", regex::optimize);	///<搜索常量表达式、字符、字符串
+static regex r_scan_one_ascii("(?:\\\\(\\S))|(.)",regex::optimize);
 
-regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$", regex::optimize);						///<匹配指令定义
-regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$", regex::optimize);			///<匹配语句输入
-regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$", regex::optimize);
+static regex r_instruction_format("^#\\w+\\{\\s*\\{([^\\}]*)\\};\\s*\\{([^\\}]*)\\}\\s*\\}$", regex::optimize);						///<匹配指令定义
+static regex r_instruction_source("^\\b([a-zA-Z]+)(?:\\s+(\\w+)(?:,(\\w+))?(?:(?:(?:,)|(?:@))(\\w+))?)?$", regex::optimize);			///<匹配语句输入
+static regex r_instruction_output("^(#[01]{6})\\s+((?:\\w+)|(?:#[01]{5}))(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+((?:\\w+)|(?:#[01]{5})))?(?:\\s+(#[01]{6}))?$", regex::optimize);
 
-regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$", regex::optimize);							///<匹配寄存器
-regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)", regex::optimize);	///<匹配表达式中的符号
+static regex r_reg_format("^\\bR((?:[012]?\\d)|(?:3[01]))$", regex::optimize);							///<匹配寄存器
+static regex r_scan_symbol("(?:(?:<<)|(?:>>)|(?:[-+*/\\(\\)&|~^]+))|(?:(?:0x[0-9a-fA-F]+)|(?:\\d+))|([a-zA-Z]\\w*)", regex::optimize);	///<匹配表达式中的符号
 
 
 
